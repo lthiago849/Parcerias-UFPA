@@ -6,7 +6,7 @@ class LaboratorioRegistroCreate(BaseModel):
     # --- Dados do Laboratório ---
     nome: str = Field(..., max_length=255, example="Laboratório de Inteligência Artificial")
     sigla: str = Field(..., max_length=10, example="LIA")
-    instituto_id: UUID
+    unidade_academica_id: UUID
 
     # --- Dados do Vínculo do Docente ---
     siape: int = Field(..., example=1234567)
@@ -18,6 +18,6 @@ class LaboratorioResponse(BaseModel):
     id: UUID
     nome: str
     sigla: str
-    instituto_id: UUID
+    unidade_academica_id: UUID
     aprovado: bool
     siape_responsavel: int

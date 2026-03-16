@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models.universidade import Universidade
-from app.models.instituto import Instituto
+from app.models.unidades_academicas import UnidadesAcademicas
 from app.models.laboratorio import Laboratorio
 from app.models.lab_pertence import LabPertence
 from app.models.usuario import Usuario
@@ -17,14 +17,14 @@ async def get_universidades(db: AsyncSession):
 
     return universidades
 
-async def get_institutos(db: AsyncSession):
+async def get_unidades_academicas(db: AsyncSession):
 
-    query = select(Instituto)
+    query = select(UnidadesAcademicas)
     result = await db.exec(query)
 
-    institutos = result.all()
+    unidades_academicas = result.all()
 
-    return institutos
+    return unidades_academicas
 
 
 async def get_laboratorios(db: AsyncSession):
@@ -45,7 +45,7 @@ async def get_laboratorios(db: AsyncSession):
             "id": lab.id,
             "nome": lab.nome,
             "sigla": lab.sigla,
-            "instituto_id": lab.instituto_id,
+            "unidade_academica_id": lab.unidade_academica_id,
             "aprovado": lab.aprovado,
             "siape_responsavel": siape,
             "nome_responsavel": nome_usuario 

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from  sqlalchemy.ext.asyncio import AsyncSession
 from app.db.db import get_session
 
-from app.controllers.entidades import get_universidades, get_institutos, get_laboratorios
+from app.controllers.entidades import get_universidades, get_unidades_academicas, get_laboratorios
 
 router = APIRouter(prefix="/entidade", tags=["Entidade"])
 
@@ -14,12 +14,12 @@ async def get_universidades_enpoint(db:AsyncSession = Depends (get_session)):
 
     return universidades_disponiveis
 
-@router.get("/get-institutos")
-async def get_institutos_endpoint(db: AsyncSession = Depends(get_session)):
+@router.get("/get-unidades-academicas")
+async def get_unidades_academicas_endpoint(db: AsyncSession = Depends(get_session)):
 
-    institutos_disponiveis = await get_institutos(db)
+    unidades_academicas_disponiveis = await get_unidades_academicas(db)
 
-    return institutos_disponiveis
+    return unidades_academicas_disponiveis
     
 
 @router.get("/get-laboratorios")

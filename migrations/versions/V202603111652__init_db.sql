@@ -70,21 +70,21 @@ CREATE TABLE "universidade" (
   "campus" VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE "instituto" (
+CREATE TABLE "unidades_academicas" (
   "id" uuid PRIMARY KEY,
   "nome" VARCHAR(255) NOT NULL,
   "sigla" VARCHAR(10) UNIQUE NOT NULL,
   "universidade_id" uuid NOT NULL,
-  CONSTRAINT fk_instituto_universidade FOREIGN KEY ("universidade_id") REFERENCES "universidade" ("id")
+  CONSTRAINT fk_unidades_academicas_universidade FOREIGN KEY ("universidade_id") REFERENCES "universidade" ("id")
 );
 
 CREATE TABLE "laboratorio" (
   "id" uuid PRIMARY KEY,
   "nome" VARCHAR(255) NOT NULL,
   "sigla" VARCHAR(10) UNIQUE NOT NULL,
-  "instituto_id" uuid NOT NULL,
+  "unidade_academica_id" uuid NOT NULL,
   "aprovado" bool NOT NULL DEFAULT false,
-  CONSTRAINT fk_laboratorio_instituto FOREIGN KEY ("instituto_id") REFERENCES "instituto" ("id")
+  CONSTRAINT fk_laboratorio_unidades_academicas FOREIGN KEY ("unidade_academica_id") REFERENCES "unidades_academicas" ("id")
 );
 
 CREATE TABLE "pi_pertence" (

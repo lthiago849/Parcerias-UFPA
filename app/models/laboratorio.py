@@ -9,7 +9,7 @@ class Laboratorio(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True, unique=True)
     nome: str = Field(max_length=255, nullable=False)
     sigla: str = Field(max_length=10, unique=True, nullable=False)
-    instituto_id: UUID = Field(foreign_key="instituto.id", nullable=False)
+    unidade_academica_id: UUID = Field(foreign_key="unidades_academicas.id", nullable=False)
     aprovado: bool = Field(default=False, nullable=False)
 
-    instituto: Optional["Instituto"] = Relationship(back_populates="laboratorios")
+    unidade_academica: Optional["UnidadesAcademicas"] = Relationship(back_populates="laboratorios")

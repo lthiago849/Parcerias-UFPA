@@ -4,7 +4,7 @@ from sqlmodel import select
 
 from app.db.db import get_session , async_engine
 from app.models.universidade import Universidade
-from app.models.instituto import Instituto
+from app.models.unidades_academicas import UnidadesAcademicas
 
 async def criar_entidades():
     """Lê os CSVs e popula o banco de dados em background."""
@@ -12,7 +12,7 @@ async def criar_entidades():
     async with AsyncSession(async_engine) as db_bg:
         try:
             df_univ = pd.read_csv('app/statics/universidades.csv')
-            df_inst = pd.read_csv('app/statics/institutos.csv')
+            df_inst = pd.read_csv('app/statics/unidade_academica.csv')
 
             mapa_univ = {}
 
@@ -34,7 +34,7 @@ async def criar_entidades():
                 else:
                     mapa_univ[univ_existente.sigla] = univ_existente.id
 
-            # PROCESSAR INSTITUTOS
+            # PROCESSAR UNIDADES_ACADEMICAS
             for index, row in df_inst.iterrows():
                 sigla_univ = row['sigla_universidade']
                 
@@ -42,18 +42,18 @@ async def criar_entidades():
                 univ_id = mapa_univ.get(sigla_univ)
 
                 if not univ_id:
-                    print(f"⚠️ Aviso: Universidade {sigla_univ} não encontrada para o instituto {row['sigla_instituto']}")
+                    print(f"⚠️ Aviso: Universidade {sigla_univ} não encontrada para o instituto {row['sigla_unidade_academica']}")
                     continue 
 
                 # Verifica se o instituto já existe
-                stmt_inst = select(Instituto).where(Instituto.sigla == row['sigla_instituto'])
+                stmt_inst = select(UnidadesAcademicas).where(UnidadesAcademicas.sigla == row['sigla_unidade_academica'])
                 resultado_inst = await db_bg.exec(stmt_inst)
                 inst_existente = resultado_inst.first()
 
                 if not inst_existente:
-                    novo_inst = Instituto(
-                        nome=row['nome_instituto'],
-                        sigla=row['sigla_instituto'],
+                    novo_inst = UnidadesAcademicas(
+                        nome=row['nome_unidade_academica'],
+                        sigla=row['sigla_unidade_academica'],
                         universidade_id=univ_id # Faz a ligação perfeita aqui!
                     )
                     db_bg.add(novo_inst)

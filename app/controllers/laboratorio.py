@@ -3,12 +3,16 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from uuid import UUID
+import logging
 
 from app.models.laboratorio import Laboratorio
 from app.models.lab_pertence import LabPertence
 from app.schemas.laboratorio import LaboratorioRegistroCreate
 
-async def criar_laboratorio_com_vinculo(
+logger = logging.getLogger(__name__)
+
+
+async def   criar_laboratorio_com_vinculo(
     db: AsyncSession,
     usuario_id: UUID,
     dados: LaboratorioRegistroCreate
@@ -18,7 +22,7 @@ async def criar_laboratorio_com_vinculo(
         novo_lab = Laboratorio(
             nome=dados.nome,
             sigla=dados.sigla,
-            instituto_id=dados.instituto_id
+            unidade_academica_id = dados.unidade_academica_id
         )
         db.add(novo_lab)
         
@@ -43,19 +47,21 @@ async def criar_laboratorio_com_vinculo(
             "id": novo_lab.id,
             "nome": novo_lab.nome,
             "sigla": novo_lab.sigla,
-            "instituto_id": novo_lab.instituto_id,
+            "unidade_academica_id": novo_lab.unidade_academica_id,
             "aprovado": novo_lab.aprovado,
             "siape_responsavel": novo_vinculo.siape 
         }
 
-    except IntegrityError:
+    except IntegrityError as e:
         # Se der erro de integridade (ex: Sigla, SIAPE ou CPF já cadastrados por outra pessoa)
         # O banco faz o rollback automático e não salva nem o Laboratório nem o Vínculo.
         await db.rollback()
+        logger.error(f"Erro de Integridade no Banco: {e.orig}")
         raise HTTPException(
             status_code=400, 
             detail="Erro: Esta sigla de laboratório, SIAPE, e-mail institucional ou CPF já estão registados no sistema."
         )
     except Exception as e:
         await db.rollback()
+        logger.exception("Erro inesperado durante a criação do laboratório")
         raise HTTPException(status_code=500, detail=str(e))
