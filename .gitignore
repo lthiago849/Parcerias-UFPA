@@ -11,7 +11,7 @@ ENV/
 .virtualenv/
 /sample_data/RedeLattes-XML/*
 /sample_data/RedeLattes-Embeddings/*
-*.csv
+# *.csv
 # Ignore the virtualenv package
 .Python
 
