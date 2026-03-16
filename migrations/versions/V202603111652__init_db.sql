@@ -56,11 +56,9 @@ CREATE TABLE "propriedade_intelectual" (
   "titulares" VARCHAR(500) NOT NULL,
   "imagens" JSONB DEFAULT '[]',
   "inventores" VARCHAR(1000) NOT NULL,
-  "unidade_orgao" VARCHAR(255) NOT NULL,
   "palavras_chave" VARCHAR(255) NOT NULL,
   "criado_em" timestamp NOT NULL DEFAULT current_timestamp,
-  "atualizado_em" timestamp NOT NULL DEFAULT current_timestamp,
-  "aprovada" bool NOT NULL DEFAULT false
+  "atualizado_em" timestamp NOT NULL DEFAULT current_timestamp
 );
 
 CREATE TABLE "universidade" (

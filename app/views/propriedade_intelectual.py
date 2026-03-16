@@ -1,7 +1,15 @@
 import os
 import shutil
-from uuid import uuid4
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from uuid import uuid4, UUID
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from  sqlalchemy.ext.asyncio import AsyncSession
+from app.db.db import get_session
+from app.security.auth import get_current_id
+
+from app.schemas.propriedade_intelectual import PropriedadeIntelectualResponse, PropriedadeIntelectualCreate
+from app.utils.validacoes import validar_tipo_usuario
+from app.controllers.propriedade_intelectual import criar_propriedade_intelectual
+
 
 router = APIRouter(prefix="/propriedade", tags=["Propriedade Intelectual"])
 
@@ -29,3 +37,15 @@ async def upload_imagem(file: UploadFile = File(...)):
 
     # Devolve o caminho para ser usado na criação da propriedade
     return {"caminho_imagem": caminho_completo}
+
+@router.post("/", response_model = PropriedadeIntelectualResponse, status_code = 201)
+async def criar_propriedade_intelectual_endpoint(
+    dados : PropriedadeIntelectualCreate,
+    db: AsyncSession = Depends(get_session),
+    usuario_id : UUID = Depends(get_current_id)
+):
+    await validar_tipo_usuario(usuario_id,db)
+
+    nova_pi = await criar_propriedade_intelectual(db, dados)
+
+    return nova_pi
