@@ -1,0 +1,66 @@
+import pandas as pd
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
+
+from app.db.db import get_session , async_engine
+from app.models.universidade import Universidade
+from app.models.instituto import Instituto
+
+async def criar_entidades():
+    """Lê os CSVs e popula o banco de dados em background."""
+    
+    async with AsyncSession(async_engine) as db_bg:
+        try:
+            df_univ = pd.read_csv('app/statics/universidades.csv')
+            df_inst = pd.read_csv('app/statics/institutos.csv')
+
+            mapa_univ = {}
+
+            #  PROCESSAR UNIVERSIDADES
+            for index, row in df_univ.iterrows():
+                stmt = select(Universidade).where(Universidade.sigla == row['sigla_universidade'])
+                resultado = await db_bg.exec(stmt)
+                univ_existente = resultado.first()
+
+                if not univ_existente:
+                    nova_univ = Universidade(
+                        nome=row['nome_universidade'],
+                        sigla=row['sigla_universidade'],
+                        campus=row['campus_universidade']
+                    )
+                    db_bg.add(nova_univ)
+                    await db_bg.flush() 
+                    mapa_univ[nova_univ.sigla] = nova_univ.id
+                else:
+                    mapa_univ[univ_existente.sigla] = univ_existente.id
+
+            # PROCESSAR INSTITUTOS
+            for index, row in df_inst.iterrows():
+                sigla_univ = row['sigla_universidade']
+                
+                # Pega o ID da universidade que guardámos no passo anterior
+                univ_id = mapa_univ.get(sigla_univ)
+
+                if not univ_id:
+                    print(f"⚠️ Aviso: Universidade {sigla_univ} não encontrada para o instituto {row['sigla_instituto']}")
+                    continue 
+
+                # Verifica se o instituto já existe
+                stmt_inst = select(Instituto).where(Instituto.sigla == row['sigla_instituto'])
+                resultado_inst = await db_bg.exec(stmt_inst)
+                inst_existente = resultado_inst.first()
+
+                if not inst_existente:
+                    novo_inst = Instituto(
+                        nome=row['nome_instituto'],
+                        sigla=row['sigla_instituto'],
+                        universidade_id=univ_id # Faz a ligação perfeita aqui!
+                    )
+                    db_bg.add(novo_inst)
+
+            await db_bg.commit()
+            print("Criação de universidades e institutos concluída com sucesso!")
+
+        except Exception as e:
+            await db_bg.rollback()
+            print(f"❌ Erro ao popular entidades: {e}")
