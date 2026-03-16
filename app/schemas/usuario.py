@@ -10,7 +10,7 @@ class UsuarioCreate(BaseModel):
     nome: str = Field(..., max_length=255, examples=["João da Silva"])
     email: EmailStr = Field(..., examples=["joao.silva@ufpa.br"])
     senha: str = Field(..., min_length=6, examples=["senhaForte123!"])
-    tipo: tipo_usuario = Field(..., examples=[tipo_usuario.DOCENTE])
+    tipo: tipo_usuario = Field(..., examples=[tipo_usuario.SERVIDOR])
 
 class UsuarioResponse(BaseModel):
     id: UUID

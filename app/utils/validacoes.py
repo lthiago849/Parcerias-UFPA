@@ -15,6 +15,6 @@ async def validar_tipo_usuario(_id: UUID, db: AsyncSession):
     usuario = await db.get(Usuario, _id)
     if not usuario:
         instancia_nao_encontrada("usuario")
-    if usuario.tipo != "DESENVOLVEDOR":
+    if usuario.tipo != "DEV":
         raise HTTPException(
             status_code=401, detail="Não autorizado (somente para desenvolvedores)")

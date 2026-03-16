@@ -2,9 +2,9 @@ from enum import Enum
 
 
 class tipo_usuario(str, Enum):
-    DOCENTE = 'DOCENTE'
+    SERVIDOR = 'SERVIDOR'
     EXTERNO = 'EXTERNO'
-    DESENVOLVEDOR = 'DESENVOLVEDOR'
+    DEV = 'DEV'
 
 class tipo_registro(str, Enum):
     PATENTE_INVENCAO = 'PATENTE_INVENCAO'      

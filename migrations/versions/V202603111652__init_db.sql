@@ -1,7 +1,7 @@
 CREATE TYPE "tipo_usuario" AS ENUM (
-  'DOCENTE',
+  'SERVIDOR',
   'EXTERNO', 
-  'DESENVOLVEDOR'
+  'DEV'
   );
 
 CREATE TYPE "tipo_registro" AS ENUM (
