@@ -115,11 +115,13 @@ CREATE TABLE "interesse" (
 
 CREATE TABLE "email_log" (
   "id" uuid PRIMARY KEY,
-  "interesse_id" uuid NOT NULL,
+  "interesse_id" uuid,
+  "email_resposta_de" uuid
   "remetente" VARCHAR(255) NOT NULL,
   "destinatario" VARCHAR(255) NOT NULL,
   "assunto" VARCHAR(255) NOT NULL,
   "corpo" TEXT NOT NULL,
   "enviado_em" timestamp NOT NULL DEFAULT current_timestamp,
   CONSTRAINT fk_email_interesse FOREIGN KEY ("interesse_id") REFERENCES "interesse" ("id") ON DELETE CASCADE
+  CONSTRAINT fk_email_resposta FOREIGN KEY ("email_resposta_de") REFERENCES "email_log" ("id") ON DELETE CASCADE
 );
