@@ -45,3 +45,4 @@ class UsuarioOut(BaseModel):
     login: Optional[str] = None
     email: Optional[str] = None
     tipo: Optional[tipo_usuario] = None
+    nome: Optional[str] = None

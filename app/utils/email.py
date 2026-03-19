@@ -6,88 +6,109 @@ import logging
 import smtplib
 from email.header import decode_header
 from email.message import EmailMessage
+from email.utils import parseaddr
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.db.db import async_engine 
 from app.models.email_log import EmailLog
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
+# Configurações do Gmail
+SMTP_SERVER, SMTP_PORT = "smtp.gmail.com", 587
 SMTP_USER = "lthiago849@gmail.com" 
 SMTP_PASSWORD = "rlqw ryqy dphi pzct" 
 
 IMAP_SERVER = "imap.gmail.com"
-EMAIL_CONTA = "lthiago849@gmail.com" 
-EMAIL_SENHA = "rlqw ryqy dphi pzct" 
+EMAIL_CONTA, EMAIL_SENHA = SMTP_USER, SMTP_PASSWORD
 
-def extrair_corpo_email(msg):
+# --- FUNÇÕES AJUDANTES (Deixam o código principal limpo) ---
+
+def extrair_corpo_limpo(msg) -> str:
+    """Extrai e limpa o texto do e-mail numa tacada só."""
+    corpo = ""
     if msg.is_multipart():
         for part in msg.walk():
-            conteudo_tipo = part.get_content_type()
-            disposicao = str(part.get("Content-Disposition"))
-            if "attachment" not in disposicao and conteudo_tipo == "text/plain":
-                return part.get_payload(decode=True).decode()
+            if part.get_content_type() == "text/plain" and "attachment" not in str(part.get("Content-Disposition")):
+                corpo = part.get_payload(decode=True).decode(errors="ignore")
+                break
     else:
-        return msg.get_payload(decode=True).decode()
-    return ""
+        corpo = msg.get_payload(decode=True).decode(errors="ignore")
 
-def ler_emails_imap():
-    respostas_encontradas = []
+    padroes_corte = [r"Em\s+.*?escreveu:", r"On\s+.*?wrote:", r"_{10,}", r"De:\s+.*?Enviado em:", r"From:\s+.*?Sent:", r"-{3,}\s*Mensagem original\s*-{3,}"]
+    for p in padroes_corte:
+        match = re.search(p, corpo, flags=re.IGNORECASE | re.DOTALL)
+        if match: corpo = corpo[:match.start()]
+        
+    return corpo.strip()
+
+def decodificar_assunto(msg) -> str:
+    assunto_raw, encoding = decode_header(msg["Subject"])[0]
+    if isinstance(assunto_raw, bytes):
+        enc = "utf-8" if encoding in (None, "unknown-8bit") else encoding
+        try: return assunto_raw.decode(enc, errors="ignore")
+        except LookupError: return assunto_raw.decode("utf-8", errors="ignore")
+    return assunto_raw
+
+def processar_mensagem_bruta(raw_bytes) -> dict | None:
+    """Transforma os bytes do IMAP num dicionário organizado."""
+    msg = email.message_from_bytes(raw_bytes)
+    
+    # Ignora e-mails enviados pela própria API
+    if msg.get("CHAVE") == "API_SISTEMA": return None
+
+    assunto = decodificar_assunto(msg)
+    match = re.search(r"\[TICKET:(.*?)\]", assunto)
+    if not match: return None
+
+    try:
+        return {
+            "email_resposta_de": UUID(match.group(1).strip()),
+            "remetente": parseaddr(str(msg.get("From") or ""))[1],
+            "destinatario": parseaddr(str(msg.get("To") or ""))[1],
+            "assunto": assunto,
+            "corpo": extrair_corpo_limpo(msg)
+        }
+    except ValueError:
+        return None
+
+# --- PROCESSOS PRINCIPAIS ---
+
+def ler_emails_imap() -> list[dict]:
+    respostas = []
+    assinaturas_vistas = set() # Impede de adicionar o mesmo e-mail lido de pastas diferentes
+    pastas = ["inbox", '"[Gmail]/E-mails enviados"', '"[Gmail]/Enviados"', '"[Gmail]/Sent Mail"', '"[Gmail]/Todos os e-mails"']
+
     try:
         mail = imaplib.IMAP4_SSL(IMAP_SERVER)
         mail.login(EMAIL_CONTA, EMAIL_SENHA)
-        mail.select("inbox")
 
-        status, mensagens = mail.search(None, "UNSEEN")
-        if not mensagens[0]:
-            mail.logout()
-            return respostas_encontradas
+        for pasta in pastas:
+            if mail.select(pasta)[0] != 'OK': continue
+            
+            _, msgs = mail.search(None, 'ALL', 'SUBJECT', '"[TICKET:"')
+            if not msgs[0]: continue
 
-        ids_emails = mensagens[0].split()
-
-        for e_id in ids_emails:
-            status, dados = mail.fetch(e_id, "(RFC822)")
-            for resposta_part in dados:
-                if isinstance(resposta_part, tuple):
-                    msg = email.message_from_bytes(resposta_part[1])
-                    
-                    assunto_raw, encoding = decode_header(msg["Subject"])[0]
-                    if isinstance(assunto_raw, bytes):
-                        assunto = assunto_raw.decode(encoding or "utf-8")
-                    else:
-                        assunto = assunto_raw
-
-                    remetente = msg.get("From")
-                    corpo = extrair_corpo_email(msg)
-
-                    match = re.search(r"\[TICKET:(.*?)\]", assunto)
-                    if match:
-                        ticket_str = match.group(1).strip()
-                        id_original = None
-                        try:
-                            id_original = UUID(ticket_str)
-                        except ValueError:
-                            logger.warning(f"O TICKET '{ticket_str}' não é um UUID válido.")
-                            
-                        respostas_encontradas.append({
-                            "email_resposta_de": id_original, # Usa a sua nova coluna
-                            "remetente": remetente,
-                            "assunto": assunto,
-                            "corpo": corpo
-                        })
+            for e_id in msgs[0].split():
+                _, dados = mail.fetch(e_id, "(RFC822)")
+                for resp_part in dados:
+                    if isinstance(resp_part, tuple):
+                        dados_msg = processar_mensagem_bruta(resp_part[1])
+                        
+                        if dados_msg:
+                            assinatura = f"{dados_msg['email_resposta_de']}-{dados_msg['remetente']}-{dados_msg['corpo']}"
+                            if assinatura not in assinaturas_vistas:
+                                assinaturas_vistas.add(assinatura)
+                                respostas.append(dados_msg)
         mail.logout()
     except Exception as e:
-        logger.error(f"Erro ao ler e-mails (IMAP): {e}")
+        logger.error(f"Erro IMAP: {e}")
     
-    return respostas_encontradas
+    return respostas
 
 async def loop_leitura_emails():
     AsyncSessionLocal = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
@@ -99,59 +120,59 @@ async def loop_leitura_emails():
             
             if novos_emails:
                 async with AsyncSessionLocal() as session:
-                    for dados in novos_emails:
-                        novo_log = EmailLog(
-                            email_resposta_de=dados["email_resposta_de"], # Salva na sua coluna
-                            remetente=dados["remetente"],
-                            destinatario=EMAIL_CONTA,
-                            assunto=dados["assunto"],
-                            corpo=dados["corpo"]
-                        )
-                        session.add(novo_log)
-                        logger.info("Preparando para salvar uma resposta atrelada ao e-mail original...")
+                    for d in novos_emails:
+                        # Ignora se o e-mail pai já não existir no banco
+                        if d["email_resposta_de"] and not (await session.execute(select(EmailLog).where(EmailLog.id == d["email_resposta_de"]))).scalars().first():
+                            continue 
+                        
+                        # Anti-duplicidade no banco de dados
+                        query_existe = select(EmailLog).where(EmailLog.remetente == d["remetente"], EmailLog.corpo == d["corpo"])
+                        if not (await session.execute(query_existe)).scalars().first():
+                            session.add(EmailLog(**d))
+                            await session.flush() 
+                            logger.info(f"✅ Nova resposta de {d['remetente']} salva!")
                     
                     await session.commit()
-                    logger.info("✅ Resposta(s) salva(s) com sucesso no banco de dados!")
         except Exception as e:
-            logger.error(f"Erro fatal no ciclo do robô: {e}")
+            logger.error(f"Erro no ciclo do robô: {e}")
             
-        await asyncio.sleep(1200)
+        await asyncio.sleep(300)
+
+def disparar_email_gmail_sync(msg: EmailMessage):
+    server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+    server.starttls()
+    server.login(SMTP_USER, SMTP_PASSWORD)
+    server.send_message(msg)
+    server.quit()
 
 async def enviar_email_interesse_background(
-    session: AsyncSession, remetente: str, destinatario: str, assunto: str, corpo: str, interesse_id: UUID | None = None,
+    session: AsyncSession, remetente: str, nome_remetente: str ,assunto: str, corpo: str, interesse_id: UUID | None = None,
 ):
-    # Gera o ID deste e-mail para mandar no TICKET
     id_deste_email = uuid4()
+    assunto_final = assunto if "[TICKET:" in assunto else f"{assunto} [TICKET:{id_deste_email}]"
 
-    if "[TICKET:" not in assunto:
-        assunto_final = f"{assunto} [TICKET: {id_deste_email}]"
-    else:
-        assunto_final = assunto
+    corpo_formatado = (
+        f"🚨 NOVA DEMANDA 🚨\n nome do usuário: {nome_remetente}\n \n Email do usuário: {remetente}\n"
+        f"----------------------------------------\n\n{corpo}\n\n----------------------------------------\n"
+        f"⚠️ ATENÇÃO: Para responder a este usuário e registrar no sistema, APENAS CLIQUE EM 'RESPONDER' neste e-mail."
+    )
 
     msg = EmailMessage()
-    msg.set_content(corpo)
+    msg.set_content(corpo_formatado)
     msg["Subject"] = assunto_final
-    msg["From"] = remetente
-    msg["To"] = destinatario
+    msg["From"] = f"Sistema <{SMTP_USER}>" 
+    msg["To"] = SMTP_USER
+    msg["Reply-To"] = remetente
+    msg["CHAVE"] = "API_SISTEMA"
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        logger.info(f"📧 E-mail disparado para {destinatario} com sucesso!")
+        await asyncio.to_thread(disparar_email_gmail_sync, msg)
+        logger.info(f"📧 E-mail disparado para {SMTP_USER} com sucesso!")
+        
+        session.add(EmailLog(
+            id=id_deste_email, interesse_id=interesse_id, email_resposta_de=None, 
+            remetente=remetente, destinatario=SMTP_USER, assunto=assunto_final, corpo=corpo
+        ))
+        await session.commit()
     except Exception as e:
-        logger.error(f"Erro ao enviar e-mail pelo Gmail: {e}")
-
-    novo_log = EmailLog(
-        id=id_deste_email, 
-        interesse_id=interesse_id,
-        email_resposta_de=None, # Como é o primeiro envio, não é resposta de ninguém
-        remetente=remetente, 
-        destinatario=destinatario, 
-        assunto=assunto_final, 
-        corpo=corpo
-    )
-    session.add(novo_log)
-    await session.commit()
+        logger.error(f"Erro ao enviar e-mail: {e}")

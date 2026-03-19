@@ -97,7 +97,8 @@ async def get_current_user(session: Session = Depends(get_session),
         id=result.id,
         login=result.login,
         email=result.email,
-        tipo=result.tipo)
+        tipo=result.tipo,
+        nome=result.nome)
     return user
 
 
