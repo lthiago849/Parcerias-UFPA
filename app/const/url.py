@@ -5,6 +5,18 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# --- SISTEMA DE RAIO-X PARA OS LOGS DO KOYEB ---
+print("\n" + "="*40)
+print("🔍 DEBUG DE CONEXÃO DO BANCO DE DADOS")
+if DATABASE_URL:
+    # Mostra apenas o início da URL para não vazar a sua senha nos logs
+    print(f"✅ Variavel encontrada no Koyeb: {DATABASE_URL[:30]}...")
+else:
+    print("❌ ALERTA: A variavel DATABASE_URL esta VAZIA ou nao foi encontrada!")
+print("="*40 + "\n")
+# -----------------------------------------------
+
+# Se a DATABASE_URL não estiver definida no Koyeb, monta a URL para o localhost/Docker
 if not DATABASE_URL:
     DOCKER_COMPOSE = os.getenv("DOCKER_COMPOSE")
     ENV_DATABASE_URL = os.getenv("ENV_DATABASE_URL")
