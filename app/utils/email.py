@@ -14,14 +14,18 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.db.db import async_engine 
 from app.models.email_log import EmailLog
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 # Configurações do Gmail
 SMTP_SERVER, SMTP_PORT = "smtp.gmail.com", 587
-SMTP_USER = "lthiago849@gmail.com" 
-SMTP_PASSWORD = "rlqw ryqy dphi pzct" 
+SMTP_USER = os.getenv("EMAIL_CONTA")
+SMTP_PASSWORD = os.getenv("EMAIL_SENHA")
 
 IMAP_SERVER = "imap.gmail.com"
 EMAIL_CONTA, EMAIL_SENHA = SMTP_USER, SMTP_PASSWORD
