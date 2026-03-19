@@ -1,0 +1,32 @@
+name: Flyway Migrations (Producao)
+
+# O robô só vai rodar quando você mandar código para a branch 'master'
+# e SE houver alguma alteração na pasta 'migrations/versions'
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'migrations/versions/**'
+
+jobs:
+  migrate:
+    name: Run SQL Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      # Sobe a mesma imagem do Flyway que você usa no seu Docker local
+      - name: Rodar Flyway no banco do Koyeb
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/migrations/versions:/flyway/sql \
+            flyway/flyway:11 \
+            -url="${{ secrets.FLYWAY_URL }}" \
+            -user="${{ secrets.FLYWAY_USER }}" \
+            -password="${{ secrets.FLYWAY_PASSWORD }}" \
+            -locations="filesystem:/flyway/sql" \
+            -baselineOnMigrate="true" \
+            migrate
