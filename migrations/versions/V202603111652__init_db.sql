@@ -125,3 +125,5 @@ CREATE TABLE "email_log" (
   CONSTRAINT fk_email_interesse FOREIGN KEY ("interesse_id") REFERENCES "interesse" ("id") ON DELETE CASCADE,
   CONSTRAINT fk_email_resposta FOREIGN KEY ("email_resposta_de") REFERENCES "email_log" ("id") ON DELETE CASCADE
 );
+
+-- Forcando execucao
