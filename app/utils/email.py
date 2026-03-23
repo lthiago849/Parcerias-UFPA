@@ -16,9 +16,10 @@ from app.db.db import async_engine
 from app.models.email_log import EmailLog
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
-
+CAMINHO_ENV = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=CAMINHO_ENV, override=True)
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
