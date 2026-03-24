@@ -4,7 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager
 
 from app.views import router
-from app.utils.email import loop_leitura_emails
+from app.controllers.email import loop_leitura_emails
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

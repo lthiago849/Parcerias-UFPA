@@ -9,13 +9,13 @@ from app.security.auth import get_current_user
 from app.schemas.auth import UsuarioOut 
 from app.schemas.email_log import EmailCreate 
 
-from app.utils.email import enviar_email_interesse_background
+from app.controllers.email import enviar_email_interesse_background
 
 router = APIRouter(prefix="/email", tags=["E-mails"])
 
 
 @router.post("/enviar")
-async def testar_envio_email(
+async def envio_email(
     dados: EmailCreate,
     db: AsyncSession = Depends(get_session),
     usuario_atual: UsuarioOut = Depends(get_current_user)

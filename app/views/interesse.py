@@ -7,7 +7,7 @@ from app.models.interesse import Interesse
 from app.models.usuario import Usuario
 from app.schemas.interesse import InteresseCreate, InteresseResponse
 from app.const.enums import tipo_usuario
-from app.utils.email import enviar_email_interesse_background
+from app.controllers.email import enviar_email_interesse_background
 
 router = APIRouter(prefix="/interesse", tags=["Interesses e Negociações"])
 

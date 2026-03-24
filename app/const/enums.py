@@ -34,3 +34,7 @@ class tipo_interesse(str, Enum):
   FINANCIAR = 'FINANCIAR'
   COMPRA = 'COMPRA'
   ASSINATURA = 'ASSINATURA'
+
+class tipo_status(str, Enum):
+    ATIVO = 'ATIVO'
+    ENCERRADO = 'ENCERRADO'
