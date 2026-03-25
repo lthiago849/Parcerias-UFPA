@@ -11,6 +11,7 @@ from email.header import decode_header
 from email.message import EmailMessage
 from email.utils import parseaddr
 from uuid import UUID, uuid4
+from fastapi import HTTPException
 
 from sqlalchemy import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -78,7 +79,7 @@ async def loop_leitura_emails():
         except Exception as e:
             logger.error(f"Erro no ciclo do robô: {e}")
             
-        await asyncio.sleep(30)
+        await asyncio.sleep(300)
 
 
 
@@ -132,3 +133,123 @@ async def enviar_email_interesse_background(
     except Exception as e:
         await session.rollback() 
         logger.error(f"🚨 ERRO CRÍTICO AO SALVAR NO BANCO DE DADOS: {e}")
+
+
+async def trocar_status_email(
+    email_id : UUID,
+    db: AsyncSession
+):
+    
+    query = select(Email
+        ).where(Email.id == email_id)
+    result = await db.execute(query)
+    email = result.scalars().first() 
+
+    if not email:
+        raise HTTPException(status_code=404, detail="Ticket de e-mail não encontrado.")
+    
+    if email.status == tipo_status.ATIVO:
+        email.status = tipo_status.ENCERRADO
+    else:
+        email.status = tipo_status.ATIVO
+
+    db.add(email)
+    await db.commit()
+    await db.refresh(email)
+
+    return {
+        "mensagem": "Status alteado com sucesso.",
+        "email_id": email.id,
+        "novo_status": email.status.value
+    }
+
+
+async def enviar_mensagem(
+    email_id: UUID,
+    corpo: str,
+    remetente: str,
+    destinatario: str,
+    db: AsyncSession
+):
+    
+    query = select(email).where(email.id == email_id)
+    result = await db.execute(query)
+    email = result.scalars().first()
+
+    if not email:
+        raise HTTPException(status_code = 404, detail = "Email nao encontrado")
+    
+    nova_mensagem = Mensagem(
+        email_id = email_id,
+        remetente = remetente,
+        destinatario = destinatario,
+        corpo = corpo
+    )
+
+    db.add(nova_mensagem)
+    await db.commit()
+    await db.refresh(nova_mensagem)
+
+    return nova_mensagem
+
+
+async def disparar_resposta_ticket_background(
+    session: AsyncSession,
+    email_id: UUID,
+    usuario_logado, # Recebemos os dados de quem está respondendo
+    corpo: str
+):
+    # 1. Busca o Ticket para pegar o Assunto
+    query_ticket = select(Email).where(Email.id == email_id)
+    ticket = (await session.execute(query_ticket)).scalars().first()
+    
+    if not ticket:
+        logger.error(f"Ticket {email_id} não encontrado para resposta.")
+        return
+
+    # MÁGICA 2: Busca a PRIMEIRA mensagem deste ticket para descobrir quem é o cliente original
+    query_primeira_msg = select(Mensagem).where(Mensagem.email_id == email_id).order_by(Mensagem.enviado_em.asc())
+    primeira_msg = (await session.execute(query_primeira_msg)).scalars().first()
+
+    if not primeira_msg:
+        logger.error("Nenhuma mensagem anterior encontrada para extrair o destinatário.")
+        return
+
+    # Define automaticamente os e-mails
+    destinatario_cliente = primeira_msg.remetente # O cliente que abriu o chamado
+    remetente_dev = usuario_logado.email # O e-mail do desenvolvedor logado no sistema
+
+    # 2. Monta o E-mail físico
+    msg = EmailMessage()
+    msg.set_content(corpo)
+    msg["Subject"] = ticket.assunto_principal
+    
+    # Deixa o e-mail bonitinho: "Nome do Dev (Via Sistema) <emaildosistema@gmail.com>"
+    msg["From"] = f"{usuario_logado.nome} (Via Sistema) <{SMTP_USER}>" 
+    
+    msg["To"] = destinatario_cliente
+    msg["Reply-To"] = f"{destinatario_cliente}, {SMTP_USER}"
+    msg["CHAVE"] = "API_SISTEMA" 
+
+    # 3. Tenta enviar o e-mail via Gmail primeiro
+    try:
+        await asyncio.to_thread(disparar_email_gmail_sync, msg)
+        logger.info(f"📧 Resposta de {usuario_logado.nome} enviada para {destinatario_cliente} com sucesso!")
+    except Exception as e:
+        logger.error(f"🚨 Erro ao enviar resposta via SMTP: {e}")
+        return 
+
+    # 4. Se o e-mail foi, salva no banco de dados
+    try:
+        nova_mensagem = Mensagem(
+            email_id=email_id,
+            remetente=remetente_dev, # Fica registrado no banco EXATAMENTE qual dev respondeu
+            destinatario=destinatario_cliente,
+            corpo=corpo
+        )
+        session.add(nova_mensagem)
+        await session.commit()
+        logger.info(f"✅ Resposta anexada ao banco do ticket {email_id}!")
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"🚨 Erro ao salvar resposta no banco: {e}")

@@ -7,3 +7,6 @@ class EmailCreate(BaseModel):
     assunto: str = "titulo do  E-mails"
     corpo: str = "Olá! gostaria de conhecer um laboratorio."
     interesse_id: Optional[UUID] = None
+
+class MensagemCreate(BaseModel):
+    corpo: str
