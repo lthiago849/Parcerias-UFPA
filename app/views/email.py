@@ -15,7 +15,8 @@ from app.controllers.email import (
     enviar_email_interesse_background,
     trocar_status_email,
     enviar_mensagem,
-    disparar_resposta_ticket_background
+    disparar_resposta_ticket_background,
+    get_conversa
 )
 
 router = APIRouter(prefix="/email", tags=["E-mails"])
@@ -74,3 +75,13 @@ async def enviar_mensagem_endpoint(
     )
 
     return {"mensagem": "Sua resposta foi enviada e salva na conversa."}
+
+@router.get("/get-conversa")
+async def conversa_endpoint(
+    email_id: UUID,
+    db: AsyncSession = Depends(get_session)
+):
+    result =  await get_conversa(email_id,db)
+
+    return result
+
