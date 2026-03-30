@@ -30,6 +30,7 @@ class LaboratorioResponse(BaseModel):
     unidade_academica_id: UUID
     nome: str
     sigla: str
+    imagens: List[str] = []
     descricao: Optional[str]
     areas_linhas_pesquisa: Optional[str]
     servicos_disponiveis: Optional[str]
@@ -52,6 +53,7 @@ class LaboratorioResponse(BaseModel):
 
 class LaboratorioUpdate(BaseModel):
     nome: Optional[str] = Field(None, max_length=255)
+    imagens: Optional[List[str]] = Field(None) 
     descricao: Optional[str] = Field(None)
     areas_linhas_pesquisa: Optional[str] = Field(None)
     servicos_disponiveis: Optional[str] = Field(None)

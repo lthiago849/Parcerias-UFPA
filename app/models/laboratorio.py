@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, TEXT
+from sqlalchemy import Column, TEXT, JSON
 from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Optional, List
@@ -12,6 +12,7 @@ class Laboratorio(SQLModel, table=True):
     unidade_academica_id: UUID = Field(foreign_key="unidades_academicas.id", nullable=False)
     nome: str = Field(max_length=255, nullable=False)
     sigla: str = Field(max_length=10, unique=True, nullable=False)
+    imagens: Optional[list[str]] = Field(default=[], sa_column=Column(JSON))
     descricao: Optional[str] = Field(default=None, sa_column=Column(TEXT)) 
     areas_linhas_pesquisa: Optional[str] = Field(default=None, sa_column=Column(TEXT))
     servicos_disponiveis: Optional[str] = Field(default=None, sa_column=Column(TEXT))
