@@ -35,6 +35,11 @@ class tipo_interesse(str, Enum):
   COMPRA = 'COMPRA'
   ASSINATURA = 'ASSINATURA'
 
-class tipo_status(str, Enum):
+class tipo_status_email(str, Enum):
     ATIVO = 'ATIVO'
     ENCERRADO = 'ENCERRADO'
+
+class tipo_funcao(str, Enum):
+    COORDENADOR = 'COORDENADOR/COORDENADORA'
+    PESQUISADOR = 'PESQUISADOR/PESQUISADORA'
+    COLABORADOR = 'COLOBORADOR/COLOBORADORA'

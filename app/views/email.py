@@ -7,7 +7,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.db.db import get_session
 from app.security.auth import get_current_user, get_current_id
 from app.schemas.auth import UsuarioOut 
-from app.schemas.email_log import EmailCreate, MensagemCreate
+from app.schemas.email import EmailCreate, MensagemCreate
 from app.utils.validacoes import validar_tipo_usuario
 
 

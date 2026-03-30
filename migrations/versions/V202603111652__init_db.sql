@@ -36,6 +36,17 @@ CREATE TYPE "tipo_interesse" AS ENUM (
   'ASSINATURA'
   );
 
+CREATE TYPE tipo_status_email AS ENUM (
+  'ATIVO',
+  'ENCERRADO'
+);
+
+CREATE TYPE tipo_funcao AS ENUM (
+  'COORDENADOR/COORDENADORA',
+  'PESQUISADOR/PESQUISADORA',
+  'COLOBORADOR/COLOBORADORA'
+);
+
 CREATE TABLE "usuario" (
   "id" uuid PRIMARY KEY,
   "login" VARCHAR(255) UNIQUE NOT NULL,
@@ -43,6 +54,17 @@ CREATE TABLE "usuario" (
   "nome" VARCHAR(255) NOT NULL,
   "senha" VARCHAR(255) NOT NULL,
   "tipo" tipo_usuario NOT NULL,
+  "siape" VARCHAR(20) UNIQUE,
+  "telefone" VARCHAR(20),
+  "cpf" VARCHAR(14) UNIQUE,
+  "cnpj" VARCHAR(18) UNIQUE,
+  "endereco" VARCHAR(255),
+  "cidade" VARCHAR(100),
+  "estado" VARCHAR(50),
+  "pais" VARCHAR(50),
+  "cep" VARCHAR(10),
+  "nacionalidade" VARCHAR(50),
+  "instituicao" VARCHAR(255),
   "criado_em" timestamp NOT NULL DEFAULT current_timestamp,
   "atualizado_em" timestamp NOT NULL DEFAULT current_timestamp
 );
@@ -78,11 +100,27 @@ CREATE TABLE "unidades_academicas" (
 
 CREATE TABLE "laboratorio" (
   "id" uuid PRIMARY KEY,
+  "unidade_academica_id" uuid NOT NULL,
   "nome" VARCHAR(255) NOT NULL,
   "sigla" VARCHAR(10) UNIQUE NOT NULL,
-  "unidade_academica_id" uuid NOT NULL,
+  "descricao" TEXT,
+  "areas_linhas_pesquisa" TEXT,
+  "servicos_disponiveis" TEXT,
+  "equipamentos" TEXT,
+  "site" VARCHAR(255),
+  "email" VARCHAR(500),
+  "telefone" VARCHAR(20),
+  "endereco" VARCHAR(255),
+  "cidade" VARCHAR(100),
+  "estado" VARCHAR(50),
+  "cep" VARCHAR(10),
+  "latitude" DECIMAL(10, 8),
+  "longitude" DECIMAL(11, 8),
+  "atualizado_em" timestamp NOT NULL DEFAULT current_timestamp,
+  "atualizado_por" uuid,
   "aprovado" bool NOT NULL DEFAULT false,
-  CONSTRAINT fk_laboratorio_unidades_academicas FOREIGN KEY ("unidade_academica_id") REFERENCES "unidades_academicas" ("id")
+  CONSTRAINT fk_laboratorio_unidades_academicas FOREIGN KEY ("unidade_academica_id") REFERENCES "unidades_academicas" ("id"),
+  CONSTRAINT fk_usuario FOREIGN KEY ("atualizado_por") REFERENCES "usuario" ("id")
 );
 
 CREATE TABLE "pi_pertence" (
@@ -113,17 +151,35 @@ CREATE TABLE "interesse" (
   CONSTRAINT fk_pi_interesse FOREIGN KEY ("propriedade_intelectual_id") REFERENCES "propriedade_intelectual" ("id")
 );
 
-CREATE TABLE "email_log" (
-  "id" uuid PRIMARY KEY,
-  "interesse_id" uuid,
-  "email_resposta_de" uuid,
-  "remetente" VARCHAR(255) NOT NULL,
-  "destinatario" VARCHAR(255) NOT NULL,
-  "assunto" VARCHAR(255) NOT NULL,
-  "corpo" TEXT NOT NULL,
-  "enviado_em" timestamp NOT NULL DEFAULT current_timestamp,
-  CONSTRAINT fk_email_interesse FOREIGN KEY ("interesse_id") REFERENCES "interesse" ("id") ON DELETE CASCADE,
-  CONSTRAINT fk_email_resposta FOREIGN KEY ("email_resposta_de") REFERENCES "email_log" ("id") ON DELETE CASCADE
+
+CREATE TABLE email (
+    id UUID PRIMARY KEY,
+    interesse_id UUID,
+    assunto_principal VARCHAR(255) NOT NULL,
+    status tipo_status_email NOT NULL DEFAULT 'ATIVO',
+    criado_em TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    
+    CONSTRAINT fk_email_interesse FOREIGN KEY (interesse_id) REFERENCES interesse(id)
 );
 
--- Forcando execucao
+CREATE TABLE mensagem (
+    id UUID PRIMARY KEY,
+    email_id UUID NOT NULL,
+    remetente VARCHAR(255) NOT NULL,
+    destinatario VARCHAR(255) NOT NULL,
+    corpo TEXT NOT NULL,
+    enviado_em TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    
+    CONSTRAINT fk_mensagem_email FOREIGN KEY (email_id) REFERENCES email(id) ON DELETE CASCADE
+);
+
+CREATE TABLE equipe (
+  id UUID PRIMARY KEY,
+  laboratorio_id UUID NOT NULL,
+  nome VARCHAR(255),
+  funcao tipo_funcao,
+  email VARCHAR(500),
+  lattes VARCHAR(50),
+  
+  CONSTRAINT fk_equipe_laboratorio FOREIGN KEY (laboratorio_id) REFERENCES laboratorio(id) ON DELETE CASCADE
+);

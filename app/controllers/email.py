@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 from app.db.db import async_engine 
 from app.models.email import Email
 from app.models.mensagem import Mensagem 
-from app.const.enums import tipo_status
+from app.const.enums import tipo_status_email
 from app.utils.email import (
     ler_emails_imap,
     disparar_email_gmail_sync
@@ -73,7 +73,7 @@ async def loop_leitura_emails():
         except Exception as e:
             logger.error(f"Erro no ciclo do robô: {e}")
             
-        await asyncio.sleep(30)
+        await asyncio.sleep(300)
 
 
 
@@ -110,7 +110,7 @@ async def enviar_email_interesse_background(
             id=id_deste_email,
             interesse_id=interesse_id,
             assunto_principal=assunto_final,
-            status=tipo_status.ATIVO
+            status=tipo_status_email.ATIVO
         )
         session.add(nova_conversa)
         
@@ -142,10 +142,10 @@ async def trocar_status_email(
     if not email:
         raise HTTPException(status_code=404, detail="Ticket de e-mail não encontrado.")
     
-    if email.status == tipo_status.ATIVO:
-        email.status = tipo_status.ENCERRADO
+    if email.status == tipo_status_email.ATIVO:
+        email.status = tipo_status_email.ENCERRADO
     else:
-        email.status = tipo_status.ATIVO
+        email.status = tipo_status_email.ATIVO
 
     db.add(email)
     await db.commit()
