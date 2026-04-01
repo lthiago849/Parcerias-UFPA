@@ -8,3 +8,4 @@ from .lab_pertence import LabPertence
 from .interesse import Interesse
 from .email import Email
 from .mensagem import Mensagem
+from .equipe import Equipe

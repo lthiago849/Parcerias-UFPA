@@ -6,7 +6,8 @@ from app.const.enums import tipo_funcao
 
 class EquipeCreate(BaseModel):
     nome: str = Field(..., max_length=255, examples=["Maria Souza"])
-    funcao: tipo_funcao = Field(..., examples=[tipo_funcao.PESQUISADOR])
+    laboratorio_id: UUID 
+    funcao: tipo_funcao = Field(..., examples=[tipo_funcao.PESQUISADOR_PESQUISADORA])
     email: Optional[EmailStr] = Field(None, examples=["maria.souza@ufpa.br"])
     lattes: Optional[str] = Field(None, max_length=50, examples=["http://lattes.cnpq.br/123456789"])
 

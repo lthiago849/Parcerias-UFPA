@@ -21,9 +21,7 @@ class LaboratorioRegistroCreate(BaseModel):
     cep: Optional[str] = Field(None, max_length=10)
     latitude: Optional[float] = Field(None)
     longitude: Optional[float] = Field(None)
-    siape: int = Field(..., examples=[1234567])
     email_institucional: EmailStr = Field(..., examples=["docente@ufpa.br"])
-    cpf: str = Field(..., max_length=40, examples=["123.456.789-00"])
 
 class LaboratorioResponse(BaseModel):
     id: UUID
@@ -46,7 +44,6 @@ class LaboratorioResponse(BaseModel):
     longitude: Optional[float]
     aprovado: bool
     membros_equipe: List[EquipeResponse] = []
-    siape_responsavel: Optional[int] = None 
 
     class Config:
         from_attributes = True
