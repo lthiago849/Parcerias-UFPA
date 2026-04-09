@@ -4,6 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from uuid import UUID
 import logging
+from sqlmodel import select
+
 
 from app.models.laboratorio import Laboratorio
 from app.models.equipe import Equipe
@@ -18,8 +20,9 @@ async def criar_laboratorio_com_equipe(
     dados: LaboratorioRegistroCreate
 ):
     try:
+        dados_dict = dados.model_dump(exclude_unset=True)
         novo_lab = Laboratorio(
-            **dados,
+            **dados_dict,
             atualizado_por=usuario_id
         )
         db.add(novo_lab)
@@ -73,3 +76,48 @@ async def criar_novo_integrante_equipe(
             status_code=500, 
             detail="Erro interno no servidor ao tentar registrar o integrante."
         )
+    
+
+async def get_laboratorios(db: AsyncSession):
+
+    query = (select(Laboratorio)
+    )
+
+
+    result = await db.exec(query)
+    linhas = result.all()
+
+    laboratorios_formatados = []
+    
+
+    for lab in linhas:
+        laboratorios_formatados.append({
+            "id": lab.id,
+            "nome": lab.nome,
+            "sigla": lab.sigla,
+            "unidade_academica_id": lab.unidade_academica_id,
+            "aprovado": lab.aprovado        })
+
+    return laboratorios_formatados
+
+
+async def get_equipe_laboratorio(
+    db: AsyncSession,
+    laboratorio_id : UUID
+):
+    query = select(Equipe).where(Equipe.laboratorio_id == laboratorio_id).order_by(Equipe.nome)
+    result = await db.exec(query)
+    equipe = result.all()
+
+    equipe_laboratorio_formatado = []
+
+    for integrante in equipe:
+        equipe_laboratorio_formatado.append({
+            "id": integrante.id,
+            "nome": integrante.nome,
+            "funcao": integrante.funcao,
+            "email": integrante.email,
+            "lattes": integrante.lattes
+        })
+
+    return equipe_laboratorio_formatado 

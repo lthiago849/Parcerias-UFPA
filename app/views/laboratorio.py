@@ -6,7 +6,9 @@ from app.db.db import get_session
 from app.security.auth import get_current_id
 
 from app.controllers.laboratorio import (criar_laboratorio_com_equipe,
-                                          criar_novo_integrante_equipe
+                                          criar_novo_integrante_equipe,
+                                          get_laboratorios,
+                                          get_equipe_laboratorio
                                           )
 from app.schemas.laboratorio import LaboratorioRegistroCreate, LaboratorioResponse
 from app.schemas.equipe import EquipeResponse, EquipeCreate
@@ -34,3 +36,21 @@ async def registrar_integrante_equipe(
     integrante_equipe = await criar_novo_integrante_equipe(db, dados)
 
     return integrante_equipe
+
+
+@router.get("/get-laboratorios")
+async def get_laboratorios_endpoint(db: AsyncSession = Depends(get_session)):
+
+    laboratorios_disponiveis = await get_laboratorios(db)
+
+    return laboratorios_disponiveis
+
+
+@router.get("/get-equipe-laboratorio")
+async def get_equipe_laboratorio_endpoint(
+    laboratorio_id: UUID,
+    db: AsyncSession = Depends(get_session)
+):
+    equipe = await get_equipe_laboratorio(db, laboratorio_id)
+
+    return equipe

@@ -32,4 +32,7 @@ class Laboratorio(SQLModel, table=True):
     aprovado: bool = Field(default=False, nullable=False)
 
     unidade_academica: Optional["UnidadesAcademicas"] = Relationship(back_populates="laboratorios")
-    membros_equipe: List["Equipe"] = Relationship(back_populates="laboratorio")
+    membros_equipe: List["Equipe"] = Relationship(
+    back_populates="laboratorio",
+    sa_relationship_kwargs={"lazy": "selectin"}
+)
