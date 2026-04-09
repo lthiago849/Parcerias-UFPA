@@ -1,5 +1,6 @@
 import os
 import shutil
+import aiofiles
 from uuid import uuid4, UUID
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
@@ -14,10 +15,43 @@ from app.controllers.propriedade_intelectual import criar_propriedade_intelectua
 from app.const.enums import tipo_registro, categoria_pi 
 
 router = APIRouter(prefix="/propriedade", tags=["Propriedade Intelectual"])
-
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-@router.post("/", response_model=PropriedadeIntelectualResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=PropriedadeIntelectualResponse,
+    status_code=201,
+    openapi_extra={
+        "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["titulo", "resumo", "tipo", "categoria", "titulares", "inventores", "palavras_chave", "laboratorio_id", "imagens"],
+                    "properties": {
+                        "titulo":         {"type": "string"},
+                        "resumo":         {"type": "string"},
+                        "tipo": {
+                            "type": "string",
+                            "enum": [e.value for e in tipo_registro]  
+                        },
+                        "categoria": {
+                            "type": "string",
+                            "enum": [e.value for e in categoria_pi]  
+                        },
+                        "titulares":      {"type": "string"},
+                        "inventores":     {"type": "string"},
+                        "palavras_chave": {"type": "string"},
+                        "laboratorio_id": {"type": "string", "format": "uuid"},
+                        "imagens":        {"type": "array", "items": {"type": "string", "format": "binary"}}
+                    }
+                }
+            }
+        }
+    }
+}
+)
 async def criar_propriedade_intelectual_endpoint(
     titulo: str = Form(...),
     resumo: str = Form(...),
@@ -27,25 +61,30 @@ async def criar_propriedade_intelectual_endpoint(
     inventores: str = Form(...),
     palavras_chave: str = Form(...),
     laboratorio_id: UUID = Form(...),
-    imagens: UploadFile = File(...),
+    imagens: List[UploadFile] = File(...),
     db: AsyncSession = Depends(get_session),
     usuario_id: UUID = Depends(get_current_id)
 ):
     await validar_tipo_usuario(usuario_id, db)
 
     caminhos_imagens = []
-    
-    if imagens:
-        if imagens.filename:
-            if not imagens.content_type.startswith("image/"):
-                raise HTTPException(status_code=400, detail=f"O ficheiro {imagens.filename} não é uma imagem válida.")
 
-            extensao = imagens.filename.split(".")[-1]
-            novo_nome_ficheiro = f"{uuid4()}.{extensao}"
-            caminho_completo = os.path.join(UPLOAD_DIR, novo_nome_ficheiro)
+    for imagem in imagens:
+        if imagem.filename:
+            if not imagem.content_type.startswith("image/"):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"O ficheiro {imagem.filename} não é uma imagem válida."
+                )
 
-            with open(caminho_completo, "wb") as buffer:
-                shutil.copyfileobj(imagens.imagens, buffer)
+            extensao = imagem.filename.split(".")[-1]
+            novo_nome = f"{uuid4()}.{extensao}"
+            caminho_completo = os.path.join(UPLOAD_DIR, novo_nome)
+
+            
+            conteudo = await imagem.read()
+            async with aiofiles.open(caminho_completo, "wb") as buffer:
+                await buffer.write(conteudo)
 
             caminhos_imagens.append(caminho_completo)
 
@@ -58,9 +97,8 @@ async def criar_propriedade_intelectual_endpoint(
         inventores=inventores,
         palavras_chave=palavras_chave,
         laboratorio_id=laboratorio_id,
-        imagens=caminhos_imagens 
+        imagens=caminhos_imagens
     )
 
     nova_pi = await criar_propriedade_intelectual(db, dados)
-
     return nova_pi
