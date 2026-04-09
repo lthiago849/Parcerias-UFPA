@@ -13,14 +13,14 @@ from app.schemas.laboratorio import LaboratorioRegistroCreate
 from app.schemas.equipe import EquipeCreate
 
 logger = logging.getLogger(__name__)
-
 async def criar_laboratorio_com_equipe(
     db: AsyncSession,
     usuario_id: UUID,
     dados: LaboratorioRegistroCreate
 ):
     try:
-        dados_dict = dados.model_dump(exclude_unset=True)
+        dados_dict = dados.model_dump()
+        
         novo_lab = Laboratorio(
             **dados_dict,
             atualizado_por=usuario_id

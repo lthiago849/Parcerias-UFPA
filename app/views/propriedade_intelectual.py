@@ -15,7 +15,7 @@ from app.controllers.propriedade_intelectual import criar_propriedade_intelectua
 from app.const.enums import tipo_registro, categoria_pi 
 
 router = APIRouter(prefix="/propriedade", tags=["Propriedade Intelectual"])
-UPLOAD_DIR = "uploads"
+UPLOAD_DIR = "uploads/PI"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 @router.post(
     "/",

@@ -1,9 +1,13 @@
 
-from uuid import  UUID
-from fastapi import APIRouter, Depends
 from  sqlalchemy.ext.asyncio import AsyncSession
 from app.db.db import get_session
 from app.security.auth import get_current_id
+from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException
+from pydantic import EmailStr
+from uuid import UUID, uuid4
+from typing import Optional
+import os
+import aiofiles
 
 from app.controllers.laboratorio import (criar_laboratorio_com_equipe,
                                           criar_novo_integrante_equipe,
@@ -16,15 +20,113 @@ from app.schemas.equipe import EquipeResponse, EquipeCreate
 router = APIRouter(prefix="/laboratorio", tags=["Laboratorio"])
 
 
-@router.post("/", response_model=LaboratorioResponse, status_code=201)
+UPLOAD_DIR_LAB = "uploads/laboratorios"
+os.makedirs(UPLOAD_DIR_LAB, exist_ok=True)
+
+@router.post(
+    "/", 
+    response_model=LaboratorioResponse, 
+    status_code=201,
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        # Apenas os campos realmente obrigatórios para criar o Lab
+                        "required": ["nome", "sigla", "unidade_academica_id"],
+                        "properties": {
+                            "nome":                  {"type": "string"},
+                            "sigla":                 {"type": "string", "maxLength": 10},
+                            "unidade_academica_id":  {"type": "string", "format": "uuid"},
+                            "descricao":             {"type": "string"},
+                            "areas_linhas_pesquisa": {"type": "string"},
+                            "servicos_disponiveis":  {"type": "string"},
+                            "equipamentos":          {"type": "string"},
+                            "site":                  {"type": "string"},
+                            "email":                 {"type": "string", "format": "email"},
+                            "telefone":              {"type": "string"},
+                            "endereco":              {"type": "string"},
+                            "cidade":                {"type": "string"},
+                            "estado":                {"type": "string"},
+                            "cep":                   {"type": "string"},
+                            "latitude":              {"type": "number", "format": "float"},
+                            "longitude":             {"type": "number", "format": "float"},
+                            "imagens": {
+                                "type": "array", 
+                                "items": {"type": "string", "format": "binary"}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
 async def registrar_novo_laboratorio(
-    dados: LaboratorioRegistroCreate,
+    nome: str = Form(..., max_length=255),
+    sigla: str = Form(..., max_length=10),
+    unidade_academica_id: UUID = Form(...),
+    descricao: Optional[str] = Form(None),
+    areas_linhas_pesquisa: Optional[str] = Form(None),
+    servicos_disponiveis: Optional[str] = Form(None),
+    equipamentos: Optional[str] = Form(None),
+    site: Optional[str] = Form(None, max_length=500),
+    email: Optional[str] = Form(None),
+    telefone: Optional[str] = Form(None, max_length=20),
+    endereco: Optional[str] = Form(None, max_length=255),
+    cidade: Optional[str] = Form(None, max_length=100),
+    estado: Optional[str] = Form(None, max_length=50),
+    cep: Optional[str] = Form(None, max_length=10),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    
+    imagens: list[UploadFile] = File(default=[]), 
+    
     db: AsyncSession = Depends(get_session),
     usuario_id: UUID = Depends(get_current_id) 
 ):
     """
-    Cria um novo laboratório e automaticamente vincula o docente criador a ele.
+    Cria um novo laboratório recebendo dados do formulário e imagens.
     """
+    caminhos_imagens = []
+
+    for imagem in imagens:
+        if imagem.filename:
+            if not imagem.content_type.startswith("image/"):
+                raise HTTPException(400, f"O arquivo {imagem.filename} não é uma imagem válida.")
+
+            extensao = imagem.filename.split(".")[-1]
+            novo_nome = f"{uuid4()}.{extensao}"
+            caminho_completo = os.path.join(UPLOAD_DIR_LAB, novo_nome)
+
+            conteudo = await imagem.read()
+            async with aiofiles.open(caminho_completo, "wb") as buffer:
+                await buffer.write(conteudo)
+
+            caminhos_imagens.append(f"/{caminho_completo}")
+
+    dados = LaboratorioRegistroCreate(
+        nome=nome,
+        sigla=sigla,
+        unidade_academica_id=unidade_academica_id,
+        descricao=descricao,
+        areas_linhas_pesquisa=areas_linhas_pesquisa,
+        servicos_disponiveis=servicos_disponiveis,
+        equipamentos=equipamentos,
+        site=site,
+        email=email,
+        telefone=telefone,
+        endereco=endereco,
+        cidade=cidade,
+        estado=estado,
+        cep=cep,
+        latitude=latitude,
+        longitude=longitude,
+        imagens=caminhos_imagens 
+    )
+
     novo_laboratorio = await criar_laboratorio_com_equipe(db, usuario_id, dados)
     return novo_laboratorio
 

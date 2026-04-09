@@ -21,7 +21,7 @@ class LaboratorioRegistroCreate(BaseModel):
     cep: Optional[str] = Field(None, max_length=10)
     latitude: Optional[float] = Field(None)
     longitude: Optional[float] = Field(None)
-    email_institucional: EmailStr = Field(..., examples=["docente@ufpa.br"])
+    imagens: list[str] = []
 
 class LaboratorioResponse(BaseModel):
     id: UUID
