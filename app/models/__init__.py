@@ -4,7 +4,6 @@ from .universidade import Universidade
 from .unidades_academicas import UnidadesAcademicas
 from .laboratorio import Laboratorio
 from .pi_pertence import PiPertence
-from .lab_pertence import LabPertence
 from .interesse import Interesse
 from .email import Email
 from .mensagem import Mensagem

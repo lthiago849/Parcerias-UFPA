@@ -132,16 +132,6 @@ CREATE TABLE "pi_pertence" (
   CONSTRAINT fk_lab_pi FOREIGN KEY ("laboratorio_id") REFERENCES "laboratorio" ("id")
 );
 
-CREATE TABLE "lab_pertence" (
-  "id" uuid PRIMARY KEY,
-  "usuario_id" uuid NOT NULL,
-  "siape" int UNIQUE NOT NULL,
-  "email_institucional" VARCHAR(255) UNIQUE NOT NULL,
-  "cpf" VARCHAR(40) UNIQUE NOT NULL,
-  "laboratorio_id" uuid NOT NULL,
-  CONSTRAINT fk_usuario_lab FOREIGN KEY ("usuario_id") REFERENCES "usuario" ("id"),
-  CONSTRAINT fk_lab_usuario FOREIGN KEY ("laboratorio_id") REFERENCES "laboratorio" ("id")
-);
 
 CREATE TABLE "interesse" (
   "id" uuid PRIMARY KEY,
