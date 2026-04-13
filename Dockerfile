@@ -1,8 +1,9 @@
 FROM python:3.12-slim
 
-# Instala dependências do sistema
+# Instalando dependencias do sistema, incluindo as do python3-saml
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential gcc libpq-dev && \
+    build-essential gcc libpq-dev \
+    libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instala o Poetry globalmente

@@ -1,0 +1,29 @@
+{
+    "strict": true,
+    "debug": true,
+    "sp": {
+        "entityId": "https://unnecessary-zebra-13parceriasufpa13-cdf37926.koyeb.app/usuario/metadata",
+        "assertionConsumerService": {
+            "url": "https://unnecessary-zebra-13parceriasufpa13-cdf37926.koyeb.app/usuario/acs",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+        },
+        "singleLogoutService": {
+            "url": "https://unnecessary-zebra-13parceriasufpa13-cdf37926.koyeb.app/usuario/sls",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        },
+        "x509cert": "MIIEITCCAwmgAwIBAgIUClfmmigtuxrtDu+iZ5F54IqLzC0wDQYJKoZIhvcNAQELBQAwgZ8xCzAJBgNVBAYTAkJSMQ0wCwYDVQQIDARQYXJhMQ4wDAYDVQQHDAVCZWxlbTEXMBUGA1UECgwOUGFyY2VyaWFzIFVGUEExGDAWBgNVBAsMD0Rlc2Vudm9sdmltZW50bzE+MDwGA1UEAww1bm5lY2Vzc2FyeS16ZWJyYS0xM3BhcmNlcmlhc3VmcGExMy1jZGYzNzkyNi5rb3llYi5hcHAwHhcNMjYwNDEzMjE1MTM3WhcNMzYwNDEyMjE1MTM3WjCBnzELMAkGA1UEBhMCQlIxDTALBgNVBAgMBFBhcmExDjAMBgNVBAcMBUJlbGVtMRcwFQYDVQQKDA5QYXJjZXJpYXMgVUZQQTEYMBYGA1UECwwPRGVzZW52b2x2aW1lbnRvMT4wPAYDVQQDDDVubmVjZXNzYXJ5LXplYnJhLTEzcGFyY2VyaWFzdWZwYTEzLWNkZjM3OTI2LmtveWViLmFwcDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK6G5xs95pu7NfCIIeldy8p7XHlB+HydN2yiihuGFgW52ZGR9xaUnz5Ctx4eCOacRWcD8Hol66/lGUHlbjfFqrxSSNA0Y+BKSCB8Q2Cay29fys/6+E5XymXH2J2HlroY4QmIO5TGLxa+CuWYJydhvBW4U7IkFtO2I74E00Jb7xEGoI/IbrBJbmgsO9dAln9j0ztOVYCQpnKkDsUoAEiXmWLB9nFqg1RKkHEl3ztYmksP85BA1mU5yMpJ3TNHWcluOHYcD7lSmySCs/r/EmQIkQlxSj9DPWqOLa5ZoW4nCHXD7iX5C7cq/I1NNHxK68s8brzzgx7FHTzNpgbeFWDpp+sCAwEAAaNTMFEwHQYDVR0OBBYEFBe6HUVSv0xFj8DGOVf+z63sVzHqMB8GA1UdIwQYMBaAFBe6HUVSv0xFj8DGOVf+z63sVzHqMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAE0XwG4wdSXUH4AQSNBpS+Fu4GRp2XeQwgCczla9ey+tazlamwh6PIkzNtkFqllyblPCW31HSXXsv++n/37/ed22u1vYprC7ksHELvwOWYcM4BscgjOzRJPFmrvs5ES2J7kCV61v39EeM2T3on5azve2AMzyNnYmus3ThMOfDYARHQicWNFdjsulk06GPBg3sNx6sAEb5zPmQnBES+IPogG1Les5WAXvOXcxP6BHl3SkjRajZO/JC0a4XCbj2Wr60KXtojuaiQ//zkH5nbW/aMxs0PSAK0UnFAyHRebbm4qyboBOuBsKu4qhRz3OXEiUDvwC889LDQzxM4cHiyhlpzs=",
+        "privateKey": "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCuhucbPeabuzXwiCHpXcvKe1x5Qfh8nTdsooobhhYFudmRkfcWlJ8+QrceHgjmnEVnA/B6Jeuv5RlB5W43xaq8UkjQNGPgSkggfENgmstvX8rP+vhOV8plx9idh5a6GOEJiDuUxi8WvgrlmCcnYbwVuFOyJBbTtiO+BNNCW+8RBqCPyG6wSW5oLDvXQJZ/Y9M7TlWAkKZypA7FKABIl5liwfZxaoNUSpBxJd87WJpLD/OQQNZlOcjKSd0zR1nJbjh2HA+5UpskgrP6/xJkCJEJcUo/Qz1qji2uWaFuJwh1w+4l+Qu3KvyNTTR8SuvLPG6884MexR08zaYG3hVg6afrAgMBAAECggEAEpeJaBQEjIN5gAmofylAS+4vUDWQaIoA/QAlsT/r+akuPb0scsnbWvEVe85cSWDNXeeEBych/+dqdOQhhSx3/z7OxetG1n5jR56lONXUpSUxwE0uhX4BsC0FbOakTmfXFUJfgn5IRuZw17uJND9Ln462z8vbaKtHDHeMH84WXhxGrDL6vrkbrWuqrbvhGqpk2+EzCi5E/NflY+GlPLZJ9juLPEEZxOY4G/y320kApdJgGopqG58tMqG+syn7DvecZel3NethYflKGERqofrt5Lt1zzZrADFGEymt337/JAllZQdlG+EC60KA56U2PfDABPWBJWWBeb2MTx+C+ysslQKBgQDyGJM5002Na1Duso2upUqvzdQeB/vqaxT2Vnei5Xrlk70pRImETVpYKrVONLDCAziivvMncYUCfrNak7BVCxLFB98hT5wdCaXygNsnYLgtKCDJhsp10+P8VTEIeQFV/W5wu7AdVzlu6KxGffShBnb+9e+W3MFUWxhSJa8uSp3t5QKBgQC4jOQ+rtLn1/lY75UnvrBNfplxVoqbnE7vhMfBPYH+BkvK5BR1mBvWJKNI2CDxyjbprDHF+nYF+hOJgIZ0YdrqPDWFEas5bjQBbLNxCh0dNt33vVvSeZhYBHIGRx/FK3BoL9ySN5qevSmfiUA0Gh35S1m5Eo91hogYbxikJHZhjwKBgF25neXZJEEHtwFyJt/iJhQBv4kQ1jpe0nK77v0lknqmw6jiW8rYl41im2Z3h6bU0GxROJmgnTnmC1GZs7541v9omL2wsGOdhJ1pvW51R1hUHL1obaFIMw9Re/Ynwpij0MncH8Z8KkQB2BBCWx6r/g2e8O6a8E3UJopHBJcLVDDxAoGAUjQv1tv4hdzl7H+LaNC/p0UlBB8QTpApePckIydKp+QWDqHZmyfN/m0DbocW5Zy1KRDSeuU9fRwPZ8ggG+capAt9q3BbXJGCCMBqjYd7wG+YH6nxJKeU/F++ip1TwXe/8iifj2HFNb/8sltohcy8XTb7GDz0Od1a8cdKqpKzSHECgYEAhH8HA/GCYsyz1ymKyu5pHJSSZCjdpUgh4sm4C7iFOXgj5GUuezOpyCoSGefeBvDbF2owFVcIibt+fMDHy9GIlGYIUtnMEHOAOsEMFebASDawhzLcE9dKJtCQRZ5pd3aBDgtKz0jtCzXdMCH8XRG0YAp8VG6PRvPABBNzSYj6lO0="
+    },
+    "idp": {
+        "entityId": "https://idp.ufpa.br/idp/shibboleth",
+        "singleSignOnService": {
+            "url": "https://idp.ufpa.br/idp/profile/SAML2/Redirect/SSO",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        },
+        "singleLogoutService": {
+            "url": "https://idp.ufpa.br/idp/profile/SAML2/Redirect/SLO",
+            "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+        },
+        "x509cert": ""
+    }
+}
