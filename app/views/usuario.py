@@ -199,7 +199,8 @@ async def saml_acs(
             
         # 6. AUTO-PROVISIONAMENTO
         statement = select(Usuario).where(Usuario.email == email)
-        usuario = session.exec(statement).first()
+        resultado = await session.exec(statement) 
+        usuario = resultado.first()               
         
         if not usuario:
             usuario = Usuario(
