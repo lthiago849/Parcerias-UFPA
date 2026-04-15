@@ -132,11 +132,9 @@ async def saml_acs(
     """
     Esta rota é chamada EXCLUSIVAMENTE pelo servidor da UFPA após o utilizador logar lá.
     """
-    # 1. Extrair os dados do formulário POST que a UFPA enviou
     form_data = await request.form()
     post_data_dict = {k: v for k, v in form_data.items()}
     
-    # 2. Precisamos de recriar o objeto de requisição incluindo os dados POST
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.dirname(current_dir)
     saml_path = os.path.join(base_dir, "saml")
@@ -152,50 +150,65 @@ async def saml_acs(
     
     auth = OneLogin_Saml2_Auth(req, custom_base_path=saml_path)
     
-    # 3. Processar e validar a assinatura da UFPA
     auth.process_response()
     erros = auth.get_errors()
     
     if erros:
         motivo = auth.get_last_error_reason()
-        logging.info(f"Erro SAML: {erros} - {motivo}")
-        # Substitua pelo URL real do seu frontend
+        logging.error(f"Erro SAML: {erros} - {motivo}")
         return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=falha_saml")
 
     if auth.is_authenticated():
-        # 4. Sucesso! Extrair os atributos (E-mail, Nome, CPF)
         atributos = auth.get_attributes()
         
-        # DEBUG: Útil para verificar quais chaves a UFPA está enviando para alunos
-        logging.info(f"DEBUG ATRIBUTOS: {atributos}")
+        # LOGGING EM VEZ DE PRINT
+        logging.info(f"ATRIBUTOS RECEBIDOS DA UFPA: {atributos}")
 
-        email = atributos.get('mail', [''])[0]
-        nome = atributos.get('cn', ['Usuario UFPA'])[0]
-        cpf = atributos.get('brPersonCPF', [None])[0]
-
-        if not email:
-            logging.info("⚠️ ERRO: O IdP autorizou o login, mas não enviou o atributo de e-mail!")
-            # Redireciona para o front com uma mensagem de erro específica
-            return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=dados_ufpa_ausentes")
+        # 4. EXTRAÇÃO ROBUSTA (Padrão CAFe/RNP + OID)
+        # Tenta os nomes da imagem da RNP, e por fim o OID
+        lista_email = (
+            atributos.get('mail') or 
+            atributos.get('inetOrgPerson-mail') or 
+            atributos.get('eduPerson-eduPersonPrincipalName') or
+            atributos.get('urn:oid:0.9.2342.19200300.100.1.3', [''])
+        )
+        email = lista_email[0] if lista_email else ''
         
-        # 5. REGRA DE NEGÓCIO: BLOQUEIO DE ALUNOS REMOVIDO PARA TESTES
-        # Originalmente bloqueava quem não fosse @ufpa.br
+        lista_nome = (
+            atributos.get('cn') or 
+            atributos.get('inetOrgPerson-cn') or 
+            atributos.get('displayName') or 
+            atributos.get('urn:oid:2.5.4.3', ['Usuario UFPA'])
+        )
+        nome = lista_nome[0] if lista_nome else 'Usuario UFPA'
+        
+        lista_cpf = (
+            atributos.get('brPersonCPF') or 
+            atributos.get('brPerson-brPersonCPF', [None])
+        )
+        cpf = lista_cpf[0] if lista_cpf else None
+        
+        # TRAVA DE SEGURANÇA
+        if not email:
+            logging.warning("⚠️ O IdP autorizou o login, mas não enviou o atributo de e-mail!")
+            return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=dados_ufpa_ausentes")
+            
+        # 5. REGRA DE NEGÓCIO: BLOQUEIO DE ALUNOS (Comentado para testes)
         # if not email.endswith("@ufpa.br"):
         #    return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=acesso_apenas_servidores")
             
-        # 6. AUTO-PROVISIONAMENTO: O utilizador já existe na nossa base de dados?
+        # 6. AUTO-PROVISIONAMENTO
         statement = select(Usuario).where(Usuario.email == email)
         usuario = session.exec(statement).first()
         
         if not usuario:
-            # Cria a conta automaticamente se for o primeiro acesso
             usuario = Usuario(
                 login=email.split('@')[0],
                 nome=nome,
                 email=email,
                 cpf=cpf,
                 senha="LOGIN_VIA_CAFE",
-                tipo="SERVIDOR" # Você pode ajustar o tipo conforme necessário
+                tipo="SERVIDOR" 
             )
             session.add(usuario)
             await session.commit()
@@ -208,11 +221,10 @@ async def saml_acs(
             expires_delta=access_token_expires
         )
         
-        # 8. DEVOLVER AO FRONTEND: Redirecionar com o token no URL
-        # Substitua pelo URL real do seu frontend
+        # 8. REDIRECIONAR PARA O FRONTEND
         url_frontend = f"https://O_SEU_FRONTEND.com/login-sucesso?token={access_token}"
-        
         return RedirectResponse(url=url_frontend, status_code=303)
         
     else:
+        logging.warning("SAML: Utilizador não autenticado.")
         return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=nao_autenticado")
