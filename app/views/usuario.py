@@ -131,7 +131,6 @@ async def saml_acs(
 ):
     """
     Esta rota é chamada EXCLUSIVAMENTE pelo servidor da UFPA após o utilizador logar lá.
-    O Frontend não chama isto diretamente.
     """
     # 1. Extrair os dados do formulário POST que a UFPA enviou
     form_data = await request.form()
