@@ -184,7 +184,8 @@ async def saml_acs(
         
         lista_cpf = (
             atributos.get('brPersonCPF') or 
-            atributos.get('brPerson-brPersonCPF', [None])
+            atributos.get('brPerson-brPersonCPF') or
+            atributos.get('urn:oid:1.3.6.1.4.1.15996.100.1.1.1.1', [None])
         )
         cpf = lista_cpf[0] if lista_cpf else None
         
@@ -197,12 +198,14 @@ async def saml_acs(
         # if not email.endswith("@ufpa.br"):
         #    return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=acesso_apenas_servidores")
             
-        # 6. AUTO-PROVISIONAMENTO
+        # 6. AUTO-PROVISIONAMENTO / ATUALIZAÇÃO
         statement = select(Usuario).where(Usuario.email == email)
-        resultado = await session.exec(statement) 
-        usuario = resultado.first()               
+        resultado = await session.exec(statement)
+        usuario = resultado.first()
         
         if not usuario:
+            # É a primeira vez: Cria o utilizador
+            logging.info(f"Criando novo utilizador: {email}")
             usuario = Usuario(
                 login=email.split('@')[0],
                 nome=nome,
@@ -212,8 +215,23 @@ async def saml_acs(
                 tipo="SERVIDOR" 
             )
             session.add(usuario)
-            await session.commit()
-            await session.refresh(usuario)
+        else:
+            logging.info(f"Utilizador {email} já existe. Verificando necessidade de atualização.")
+            
+            mudou = False
+            if usuario.nome == "Usuario UFPA" and nome != "Usuario UFPA":
+                usuario.nome = nome
+                mudou = True
+            if usuario.cpf is None and cpf is not None:
+                usuario.cpf = cpf
+                mudou = True
+            
+            if mudou:
+                logging.info(f"Dados do utilizador {email} atualizados com sucesso.")
+                session.add(usuario) 
+
+        await session.commit()
+        await session.refresh(usuario)
             
         # 7. GERAR O TOKEN JWT
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRES_MINUTES)
