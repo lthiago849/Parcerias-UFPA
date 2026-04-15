@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from datetime import timedelta
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 import os
-
+import logging
 from app.schemas.auth import UsuarioIn, Token, UsuarioOut
 from app.db.db import get_session
 from app.security.auth import (
@@ -144,7 +144,7 @@ async def saml_acs(
     req = {
         "http_host": request.url.hostname,
         "script_name": request.url.path,
-        "server_port": 433,
+        "server_port": 443,
         "get_data": request.query_params._dict,
         "post_data": post_data_dict,
         "https": "on" 
@@ -158,7 +158,7 @@ async def saml_acs(
     
     if erros:
         motivo = auth.get_last_error_reason()
-        print(f"Erro SAML: {erros} - {motivo}")
+        logging.info(f"Erro SAML: {erros} - {motivo}")
         # Substitua pelo URL real do seu frontend
         return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=falha_saml")
 
@@ -167,11 +167,16 @@ async def saml_acs(
         atributos = auth.get_attributes()
         
         # DEBUG: Útil para verificar quais chaves a UFPA está enviando para alunos
-        print(f"DEBUG ATRIBUTOS: {atributos}")
+        logging.info(f"DEBUG ATRIBUTOS: {atributos}")
 
         email = atributos.get('mail', [''])[0]
         nome = atributos.get('cn', ['Usuario UFPA'])[0]
         cpf = atributos.get('brPersonCPF', [None])[0]
+
+        if not email:
+            logging.info("⚠️ ERRO: O IdP autorizou o login, mas não enviou o atributo de e-mail!")
+            # Redireciona para o front com uma mensagem de erro específica
+            return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=dados_ufpa_ausentes")
         
         # 5. REGRA DE NEGÓCIO: BLOQUEIO DE ALUNOS REMOVIDO PARA TESTES
         # Originalmente bloqueava quem não fosse @ufpa.br
