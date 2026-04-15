@@ -146,8 +146,9 @@ async def saml_acs(
         "script_name": request.url.path,
         "server_port": request.url.port or (443 if request.url.scheme == "https" else 80),
         "get_data": request.query_params._dict,
-        "post_data": post_data_dict, # <-- Agora injetamos o XML recebido aqui!
-        "https": "on" if request.url.scheme == "https" else "off"
+        "post_data": post_data_dict,
+        # CORREÇÃO PARA KOYEB: Forçamos "on" pois o servidor está atrás de um proxy HTTPS
+        "https": "on" 
     }
     
     auth = OneLogin_Saml2_Auth(req, custom_base_path=saml_path)
@@ -159,41 +160,44 @@ async def saml_acs(
     if erros:
         motivo = auth.get_last_error_reason()
         print(f"Erro SAML: {erros} - {motivo}")
+        # Substitua pelo URL real do seu frontend
         return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=falha_saml")
 
     if auth.is_authenticated():
         # 4. Sucesso! Extrair os atributos (E-mail, Nome, CPF)
         atributos = auth.get_attributes()
         
-        # NOTA: Os nomes 'mail', 'cn' e 'brPersonCPF' são o padrão do Shibboleth. 
-        # O Gabriel pode usar nomes ligeiramente diferentes. Se falhar, faça print(atributos) para ver as chaves.
+        # DEBUG: Útil para verificar quais chaves a UFPA está enviando para alunos
+        print(f"DEBUG ATRIBUTOS: {atributos}")
+
         email = atributos.get('mail', [''])[0]
         nome = atributos.get('cn', ['Usuario UFPA'])[0]
         cpf = atributos.get('brPersonCPF', [None])[0]
         
-        # 5. REGRA DE NEGÓCIO: Apenas @ufpa.br (Bloquear alunos)
-        if not email.endswith("@ufpa.br"):
-            return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=acesso_apenas_servidores")
+        # 5. REGRA DE NEGÓCIO: BLOQUEIO DE ALUNOS REMOVIDO PARA TESTES
+        # Originalmente bloqueava quem não fosse @ufpa.br
+        # if not email.endswith("@ufpa.br"):
+        #    return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=acesso_apenas_servidores")
             
         # 6. AUTO-PROVISIONAMENTO: O utilizador já existe na nossa base de dados?
         statement = select(Usuario).where(Usuario.email == email)
         usuario = session.exec(statement).first()
         
         if not usuario:
-            # É a primeira vez deste professor! Vamos criar a conta dele automaticamente.
+            # Cria a conta automaticamente se for o primeiro acesso
             usuario = Usuario(
-                login=email.split('@')[0], # ex: usa 'thiago' do 'thiago@ufpa.br'
+                login=email.split('@')[0],
                 nome=nome,
                 email=email,
                 cpf=cpf,
-                senha="LOGIN_VIA_CAFE", # Senha simbólica, ele nunca a vai usar
-                tipo="SERVIDOR" 
+                senha="LOGIN_VIA_CAFE",
+                tipo="SERVIDOR" # Você pode ajustar o tipo conforme necessário
             )
             session.add(usuario)
-            session.commit()
-            session.refresh(usuario)
+            await session.commit()
+            await session.refresh(usuario)
             
-        # 7. GERAR O TOKEN JWT (Usando as suas funções já existentes)
+        # 7. GERAR O TOKEN JWT
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRES_MINUTES)
         access_token = create_access_token(
             data={"sub": usuario.login}, 
@@ -201,10 +205,9 @@ async def saml_acs(
         )
         
         # 8. DEVOLVER AO FRONTEND: Redirecionar com o token no URL
-        # O Frontend deve ter uma rota invisível '/login-sucesso' que apanha este token e guarda no LocalStorage
+        # Substitua pelo URL real do seu frontend
         url_frontend = f"https://O_SEU_FRONTEND.com/login-sucesso?token={access_token}"
         
-        # O status 303 (See Other) é obrigatório após um POST para redirecionar corretamente
         return RedirectResponse(url=url_frontend, status_code=303)
         
     else:
