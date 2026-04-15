@@ -144,10 +144,9 @@ async def saml_acs(
     req = {
         "http_host": request.url.hostname,
         "script_name": request.url.path,
-        "server_port": request.url.port or (443 if request.url.scheme == "https" else 80),
+        "server_port": 433,
         "get_data": request.query_params._dict,
         "post_data": post_data_dict,
-        # CORREÇÃO PARA KOYEB: Forçamos "on" pois o servidor está atrás de um proxy HTTPS
         "https": "on" 
     }
     
