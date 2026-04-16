@@ -235,7 +235,7 @@ async def saml_acs(
         )
         
         #  REDIRECIONAR PARA O FRONTEND
-        url_frontend = f"https://parcerias-ufpa-react.vercel.app/?token={access_token}"
+        url_frontend = f"https://parcerias-ufpa-react.vercel.app/login-sucesso/?token={access_token}"
         return RedirectResponse(url=url_frontend, status_code=303)
         
     else:
