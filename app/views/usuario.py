@@ -161,11 +161,8 @@ async def saml_acs(
     if auth.is_authenticated():
         atributos = auth.get_attributes()
         
-        # LOGGING EM VEZ DE PRINT
         logging.info(f"ATRIBUTOS RECEBIDOS DA UFPA: {atributos}")
 
-        # 4. EXTRAÇÃO ROBUSTA (Padrão CAFe/RNP + OID)
-        # Tenta os nomes da imagem da RNP, e por fim o OID
         lista_email = (
             atributos.get('mail') or 
             atributos.get('inetOrgPerson-mail') or 
@@ -189,12 +186,11 @@ async def saml_acs(
         )
         cpf = lista_cpf[0] if lista_cpf else None
         
-        # TRAVA DE SEGURANÇA
         if not email:
             logging.warning("⚠️ O IdP autorizou o login, mas não enviou o atributo de e-mail!")
             return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=dados_ufpa_ausentes")
             
-        # 5. REGRA DE NEGÓCIO: BLOQUEIO DE ALUNOS (Comentado para testes)
+        # 5.  BLOQUEIO DE ALUNOS 
         # if not email.endswith("@ufpa.br"):
         #    return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=acesso_apenas_servidores")
             
@@ -204,7 +200,6 @@ async def saml_acs(
         usuario = resultado.first()
         
         if not usuario:
-            # É a primeira vez: Cria o utilizador
             logging.info(f"Criando novo utilizador: {email}")
             usuario = Usuario(
                 login=email.split('@')[0],
@@ -233,15 +228,14 @@ async def saml_acs(
         await session.commit()
         await session.refresh(usuario)
             
-        # 7. GERAR O TOKEN JWT
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRES_MINUTES)
         access_token = create_access_token(
             data={"sub": usuario.login}, 
             expires_delta=access_token_expires
         )
         
-        # 8. REDIRECIONAR PARA O FRONTEND
-        url_frontend = f"https://O_SEU_FRONTEND.com/login-sucesso?token={access_token}"
+        #  REDIRECIONAR PARA O FRONTEND
+        url_frontend = f"https://parcerias-ufpa-react.vercel.app/?token={access_token}"
         return RedirectResponse(url=url_frontend, status_code=303)
         
     else:
