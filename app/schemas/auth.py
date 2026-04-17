@@ -46,3 +46,6 @@ class UsuarioOut(BaseModel):
     email: Optional[str] = None
     tipo: Optional[tipo_usuario] = None
     nome: Optional[str] = None
+    
+class TokenInput(BaseModel):
+    token: str

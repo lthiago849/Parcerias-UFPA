@@ -6,7 +6,10 @@ from datetime import timedelta
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 import os
 import logging
-from app.schemas.auth import UsuarioIn, Token, UsuarioOut
+from sqlmodel.ext.asyncio.session import AsyncSession
+from jose import jwt, JWTError
+
+from app.schemas.auth import UsuarioIn, Token, UsuarioOut, TokenInput
 from app.db.db import get_session
 from app.security.auth import (
     get_hash,
@@ -15,7 +18,7 @@ from app.security.auth import (
     get_current_user
 )
 from app.models.usuario import Usuario
-from app.const.config import ACCESS_TOKEN_EXPIRES_MINUTES
+from app.const.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRES_MINUTES
 
 router = APIRouter(prefix = "/usuario", tags = {"Usuario"})
 
@@ -241,3 +244,46 @@ async def saml_acs(
     else:
         logging.warning("SAML: Utilizador não autenticado.")
         return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=nao_autenticado")
+    
+
+@router.post("/identificar-token", response_model=UsuarioOut, summary="Descobrir dono de um token específico")
+async def identificar_qualquer_token(
+    dados: TokenInput, 
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Recebe qualquer JWT no corpo da requisição e retorna o usuário correspondente.
+    Útil para auditoria ou painéis administrativos.
+    """
+    excecao_invalido = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido, corrompido ou expirado."
+    )
+    
+    try:
+        payload = jwt.decode(dados.token, SECRET_KEY, algorithms=[ALGORITHM])
+        login: str = payload.get("sub")
+        
+        if not login:
+            raise excecao_invalido
+            
+    except JWTError:
+        raise excecao_invalido
+
+    statement = select(Usuario).where(Usuario.login == login)
+    resultado = await session.exec(statement)
+    usuario = resultado.first()
+
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="O dono deste token não existe mais no banco de dados."
+        )
+        
+    return UsuarioOut(
+        id=usuario.id,
+        login=usuario.login,
+        email=usuario.email,
+        tipo=usuario.tipo,
+        nome=usuario.nome
+    )
