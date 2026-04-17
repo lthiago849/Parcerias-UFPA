@@ -246,44 +246,42 @@ async def saml_acs(
         return RedirectResponse(url="https://O_SEU_FRONTEND.com/erro?msg=nao_autenticado")
     
 
-@router.post("/identificar-token", response_model=UsuarioOut, summary="Descobrir dono de um token específico")
+@router.post("/identificar-token", response_model=UsuarioOut)
 async def identificar_qualquer_token(
     dados: TokenInput, 
     session: AsyncSession = Depends(get_session)
 ):
-    """
-    Recebe qualquer JWT no corpo da requisição e retorna o usuário correspondente.
-    Útil para auditoria ou painéis administrativos.
-    """
-    excecao_invalido = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Token inválido, corrompido ou expirado."
-    )
-    
     try:
         payload = jwt.decode(dados.token, SECRET_KEY, algorithms=[ALGORITHM])
-        login: str = payload.get("sub")
+        login_do_token = payload.get("sub")
         
-        if not login:
-            raise excecao_invalido
+        # --- LOG DE DIAGNÓSTICO ---
+        logging.info(f"DEBUG: Login extraído do token: '{login_do_token}'")
+        
+        if not login_do_token:
+            raise HTTPException(status_code=401, detail="Token sem campo 'sub'")
             
-    except JWTError:
-        raise excecao_invalido
+    except JWTError as e:
+        logging.error(f"Erro ao decodificar token: {e}")
+        raise HTTPException(status_code=401, detail="Token inválido")
 
-    statement = select(Usuario).where(Usuario.login == login)
+    # Usamos o .lower() para garantir que a busca não falhe por causa de maiúsculas
+    statement = select(Usuario).where(Usuario.login == login_do_token)
     resultado = await session.exec(statement)
     usuario = resultado.first()
 
     if not usuario:
+        # Se não achou pelo login, vamos tentar pelo e-mail só por segurança
+        logging.warning(f"Usuário '{login_do_token}' não achado no login. Tentando e-mail...")
+        statement_email = select(Usuario).where(Usuario.email == login_do_token)
+        resultado_email = await session.exec(statement_email)
+        usuario = resultado_email.first()
+
+    if not usuario:
+        logging.error(f"Falha total: '{login_do_token}' não existe em 'login' nem em 'email'.")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="O dono deste token não existe mais no banco de dados."
+            status_code=404, 
+            detail=f"Dono do token '{login_do_token}' não encontrado no banco."
         )
         
-    return UsuarioOut(
-        id=usuario.id,
-        login=usuario.login,
-        email=usuario.email,
-        tipo=usuario.tipo,
-        nome=usuario.nome
-    )
+    return usuario
