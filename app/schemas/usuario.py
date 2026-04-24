@@ -11,7 +11,7 @@ class UsuarioCreate(BaseModel):
     nome: str = Field(..., max_length=255, examples=["João da Silva"])
     email: EmailStr = Field(..., examples=["joao.silva@ufpa.br"])
     senha: str = Field(..., min_length=6, examples=["senhaForte123!"])
-    tipo: tipo_usuario = Field(..., examples=[tipo_usuario.DOCENTE])
+    tipo: tipo_usuario = Field(..., examples=[tipo_usuario.SERVIDOR])
     siape: Optional[str] = Field(None, max_length=20)
     telefone: Optional[str] = Field(None, max_length=20, examples=["(91) 98888-7777"])
     cpf: Optional[str] = Field(None, max_length=14, examples=["123.456.789-00"])
@@ -58,3 +58,6 @@ class UsuarioUpdate(BaseModel):
     estado: Optional[str] = Field(None, max_length=50)
     cep: Optional[str] = Field(None, max_length=10)
     instituicao: Optional[str] = Field(None, max_length=255)
+
+class TrocarTipoRequest(BaseModel):
+    novo_tipo: tipo_usuario

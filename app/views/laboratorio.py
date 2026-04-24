@@ -8,11 +8,12 @@ from uuid import UUID, uuid4
 from typing import Optional
 import os
 import aiofiles
-
+from app.utils.validacoes import validar_tipo_usuario
 from app.controllers.laboratorio import (criar_laboratorio_com_equipe,
                                           criar_novo_integrante_equipe,
                                           get_laboratorios,
-                                          get_equipe_laboratorio
+                                          get_equipe_laboratorio,
+                                          trocar_status_laboratorio
                                           )
 from app.schemas.laboratorio import LaboratorioRegistroCreate, LaboratorioResponse
 from app.schemas.equipe import EquipeResponse, EquipeCreate
@@ -141,9 +142,11 @@ async def registrar_integrante_equipe(
 
 
 @router.get("/get-laboratorios")
-async def get_laboratorios_endpoint(db: AsyncSession = Depends(get_session)):
+async def get_laboratorios_endpoint(
+    db: AsyncSession = Depends(get_session),
+    aprovado: Optional[bool] = None):
 
-    laboratorios_disponiveis = await get_laboratorios(db)
+    laboratorios_disponiveis = await get_laboratorios(db, aprovado)
 
     return laboratorios_disponiveis
 
@@ -156,3 +159,15 @@ async def get_equipe_laboratorio_endpoint(
     equipe = await get_equipe_laboratorio(db, laboratorio_id)
 
     return equipe
+
+@router.patch("/{laboratorio_id}/trocar-status")
+async def trocar_status_laboratorio_endpoint(
+    laboratorio_id: UUID,
+    db: AsyncSession = Depends(get_session),
+    current_id: UUID = Depends(get_current_id)
+):
+    await validar_tipo_usuario(current_id, db)
+
+    resultado = await trocar_status_laboratorio(laboratorio_id, db)
+
+    return resultado

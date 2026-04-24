@@ -10,7 +10,7 @@ def validar_horario() -> datetime:
     return hora_formatada
 
 
-async def validar_tipo_usuario(_id: UUID, db: AsyncSession):
+async def validar_tipo_usuario_dev(_id: UUID, db: AsyncSession):
     from app.models.usuario import Usuario
     usuario = await db.get(Usuario, _id)
     if not usuario:
@@ -18,3 +18,16 @@ async def validar_tipo_usuario(_id: UUID, db: AsyncSession):
     if usuario.tipo != "DEV":
         raise HTTPException(
             status_code=401, detail="Não autorizado (somente para desenvolvedores)")
+    
+async def validar_tipo_usuario(_id: UUID, db: AsyncSession):
+    from app.models.usuario import Usuario
+    usuario = await db.get(Usuario, _id)
+    
+    if not usuario:
+        instancia_nao_encontrada("usuario")
+        
+    if usuario.tipo not in ["DEV", "SIND"]:
+        raise HTTPException(
+            status_code=401, 
+            detail="Não autorizado (somente para desenvolvedores e Funcionarios da sInd)"
+        )

@@ -5,12 +5,13 @@ from fastapi import HTTPException
 from uuid import UUID
 import logging
 from sqlmodel import select
-
+from typing import Optional
 
 from app.models.laboratorio import Laboratorio
 from app.models.equipe import Equipe
 from app.schemas.laboratorio import LaboratorioRegistroCreate
 from app.schemas.equipe import EquipeCreate
+from app.models.lab_pertence import LabPertence
 
 logger = logging.getLogger(__name__)
 async def criar_laboratorio_com_equipe(
@@ -26,6 +27,13 @@ async def criar_laboratorio_com_equipe(
             atualizado_por=usuario_id
         )
         db.add(novo_lab)
+        await db.flush()
+
+        novo_vinculo = LabPertence(
+            usuario_id=usuario_id,
+            laboratorio_id=novo_lab.id
+        )
+        db.add(novo_vinculo)
         
         await db.commit()
         await db.refresh(novo_lab)
@@ -78,11 +86,15 @@ async def criar_novo_integrante_equipe(
         )
     
 
-async def get_laboratorios(db: AsyncSession):
+async def get_laboratorios(db: AsyncSession, aprovado: Optional[bool] = None):
 
     query = (select(Laboratorio)
     )
-
+    if aprovado is True:
+        query = query.where(Laboratorio.aprovado == True)
+        
+    elif aprovado is False:
+        query = query.where(Laboratorio.aprovado == False)
 
     result = await db.exec(query)
     linhas = result.all()
@@ -121,3 +133,27 @@ async def get_equipe_laboratorio(
         })
 
     return equipe_laboratorio_formatado 
+
+async def trocar_status_laboratorio(
+    laboratorio_id: UUID,
+    db: AsyncSession
+):
+    
+    query = select(Laboratorio).where(Laboratorio.id == laboratorio_id)
+    result = await db.exec(query)
+    laboratorio = result.first() 
+
+    if not laboratorio:
+        raise HTTPException(status_code=404, detail="Laboratório não encontrado.")
+    
+    laboratorio.aprovado = not laboratorio.aprovado
+
+    db.add(laboratorio)
+    await db.commit()
+    await db.refresh(laboratorio)
+
+    return {
+        "mensagem": "Status alterado com sucesso.",
+        "laboratorio_id": laboratorio.id,
+        "novo_status": laboratorio.aprovado
+    }

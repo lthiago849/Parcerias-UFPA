@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Optional, List
 from app.utils.validacoes import validar_horario
+from app.models.lab_pertence import LabPertence
 
 class Laboratorio(SQLModel, table=True):
     __tablename__ = "laboratorio"
@@ -36,3 +37,7 @@ class Laboratorio(SQLModel, table=True):
     back_populates="laboratorio",
     sa_relationship_kwargs={"lazy": "selectin"}
 )
+    usuarios: list["Usuario"] = Relationship(
+        back_populates="laboratorios", 
+        link_model=LabPertence
+    )

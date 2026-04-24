@@ -5,6 +5,7 @@ class tipo_usuario(str, Enum):
     SERVIDOR = 'SERVIDOR'
     EXTERNO = 'EXTERNO'
     DEV = 'DEV'
+    SIND = 'SIND'
 
 class tipo_registro(str, Enum):
     PATENTE_INVENCAO = 'PATENTE_INVENCAO'      

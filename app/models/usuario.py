@@ -1,10 +1,10 @@
 from uuid import UUID, uuid4
-from sqlmodel import SQLModel, Field
-from datetime import datetime
+from sqlmodel import SQLModel, Field, Relationship
+from datetime import datetime, date
 from app.const.enums import tipo_usuario
 from app.utils.validacoes import validar_horario
 from typing import Optional
-
+from app.models.lab_pertence import LabPertence
 
 class Usuario(SQLModel, table=True):
     __tablename__ = "usuario"
@@ -28,3 +28,8 @@ class Usuario(SQLModel, table=True):
     instituicao: Optional[str] = Field(default=None, max_length=255)
     criado_em: datetime = Field(default_factory=validar_horario, nullable=False)
     atualizado_em: datetime = Field(default_factory=validar_horario, nullable=False, sa_column_kwargs={"onupdate": validar_horario})
+    data_nascimento: Optional[date] = Field(default=None)
+    laboratorios: list["Laboratorio"] = Relationship(
+        back_populates="usuarios", 
+        link_model=LabPertence
+    )

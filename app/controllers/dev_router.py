@@ -1,10 +1,14 @@
 import pandas as pd
+from uuid import UUID
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
+from fastapi import HTTPException
 
 from app.db.db import get_session , async_engine
 from app.models.universidade import Universidade
 from app.models.unidades_academicas import UnidadesAcademicas
+from app.models.usuario import Usuario
+from app.const.enums import tipo_usuario
 
 async def criar_entidades():
     """Lê os CSVs e popula o banco de dados em background."""
@@ -64,3 +68,23 @@ async def criar_entidades():
         except Exception as e:
             await db_bg.rollback()
             print(f"❌ Erro ao popular entidades: {e}")
+
+async def alterar_tipo_usuario(
+    usuario_id: UUID, 
+    novo_tipo: tipo_usuario, 
+    db: AsyncSession
+):
+    query = select(Usuario).where(Usuario.id == usuario_id)
+    result = await db.exec(query)
+    usuario = result.first()
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    usuario.tipo = novo_tipo
+
+    db.add(usuario)
+    await db.commit()
+    await db.refresh(usuario)
+
+    return usuario
