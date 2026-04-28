@@ -12,6 +12,7 @@ from app.models.equipe import Equipe
 from app.schemas.laboratorio import LaboratorioRegistroCreate
 from app.schemas.equipe import EquipeCreate
 from app.models.lab_pertence import LabPertence
+from app.utils.laboratorio import transformar_em_array
 
 logger = logging.getLogger(__name__)
 async def criar_laboratorio_com_equipe(
@@ -84,10 +85,9 @@ async def criar_novo_integrante_equipe(
             status_code=500, 
             detail="Erro interno no servidor ao tentar registrar o integrante."
         )
-    
 async def get_laboratorios(db: AsyncSession, aprovado: Optional[bool] = None):
 
-    query = select(Laboratorio)
+    query = select(Laboratorio).order_by(Laboratorio.atualizado_em.desc())
 
     if aprovado is True:
         query = query.where(Laboratorio.aprovado == True)
@@ -95,8 +95,20 @@ async def get_laboratorios(db: AsyncSession, aprovado: Optional[bool] = None):
         query = query.where(Laboratorio.aprovado == False)
 
     result = await db.exec(query)
+    laboratorios_db = result.all()
 
-    return result.all()
+    laboratorios_formatados = []
+
+    for lab in laboratorios_db:
+        lab_dict = lab.model_dump()
+
+        lab_dict["areas_linhas_pesquisa"] = transformar_em_array(lab.areas_linhas_pesquisa)
+        lab_dict["equipamentos"] = transformar_em_array(lab.equipamentos)
+        lab_dict["servicos_disponiveis"] = transformar_em_array(lab.servicos_disponiveis)
+
+        laboratorios_formatados.append(lab_dict)
+
+    return laboratorios_formatados
 
 async def get_equipe_laboratorio(
     db: AsyncSession,
