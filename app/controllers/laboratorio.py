@@ -85,33 +85,18 @@ async def criar_novo_integrante_equipe(
             detail="Erro interno no servidor ao tentar registrar o integrante."
         )
     
-
 async def get_laboratorios(db: AsyncSession, aprovado: Optional[bool] = None):
 
-    query = (select(Laboratorio)
-    )
+    query = select(Laboratorio)
+
     if aprovado is True:
         query = query.where(Laboratorio.aprovado == True)
-        
     elif aprovado is False:
         query = query.where(Laboratorio.aprovado == False)
 
     result = await db.exec(query)
-    linhas = result.all()
 
-    laboratorios_formatados = []
-    
-
-    for lab in linhas:
-        laboratorios_formatados.append({
-            "id": lab.id,
-            "nome": lab.nome,
-            "sigla": lab.sigla,
-            "unidade_academica_id": lab.unidade_academica_id,
-            "aprovado": lab.aprovado        })
-
-    return laboratorios_formatados
-
+    return result.all()
 
 async def get_equipe_laboratorio(
     db: AsyncSession,
