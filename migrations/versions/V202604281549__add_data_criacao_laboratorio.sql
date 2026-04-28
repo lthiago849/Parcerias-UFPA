@@ -1,0 +1,1 @@
+ALTER TABLE laboratorio ADD COLUMN publicado_em DATE;

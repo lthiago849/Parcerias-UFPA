@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, TEXT, JSON
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, List
 from app.utils.validacoes import validar_horario
 from app.models.lab_pertence import LabPertence
@@ -27,10 +27,10 @@ class Laboratorio(SQLModel, table=True):
     cep: Optional[str] = Field(default=None, max_length=10)
     latitude: Optional[float] = Field(default=None)
     longitude: Optional[float] = Field(default=None)
-    
     atualizado_em: datetime = Field(default_factory=validar_horario, nullable=False, sa_column_kwargs={"onupdate": validar_horario})
     atualizado_por: Optional[UUID] = Field(default=None, foreign_key="usuario.id")
     aprovado: bool = Field(default=False, nullable=False)
+    publicado_em: Optional[date] = Field(default=None)
 
     unidade_academica: Optional["UnidadesAcademicas"] = Relationship(back_populates="laboratorios")
     membros_equipe: List["Equipe"] = Relationship(
