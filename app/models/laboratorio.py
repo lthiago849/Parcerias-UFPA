@@ -30,7 +30,7 @@ class Laboratorio(SQLModel, table=True):
     atualizado_em: datetime = Field(default_factory=validar_horario, nullable=False, sa_column_kwargs={"onupdate": validar_horario})
     atualizado_por: Optional[UUID] = Field(default=None, foreign_key="usuario.id")
     aprovado: bool = Field(default=False, nullable=False)
-    publicado_em: Optional[date] = Field(default=None)
+    publicado_em: Optional[date] = Field(default_factory=date.today)
 
     unidade_academica: Optional["UnidadesAcademicas"] = Relationship(back_populates="laboratorios")
     membros_equipe: List["Equipe"] = Relationship(
