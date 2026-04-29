@@ -7,7 +7,10 @@ from pydantic import EmailStr
 from uuid import UUID, uuid4
 from typing import Optional
 import os
+import cloudinary
+import cloudinary.uploader
 import aiofiles
+from dotenv import load_dotenv
 from app.utils.validacoes import validar_tipo_usuario
 from app.controllers.laboratorio import (criar_laboratorio_com_equipe,
                                           criar_novo_integrante_equipe,
@@ -18,11 +21,16 @@ from app.controllers.laboratorio import (criar_laboratorio_com_equipe,
 from app.schemas.laboratorio import LaboratorioRegistroCreate, LaboratorioResponse
 from app.schemas.equipe import EquipeResponse, EquipeCreate
 
+load_dotenv()
 router = APIRouter(prefix="/laboratorio", tags=["Laboratorio"])
 
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 
-UPLOAD_DIR_LAB = "uploads/laboratorios"
-os.makedirs(UPLOAD_DIR_LAB, exist_ok=True)
 
 @router.post(
     "/", 
@@ -98,16 +106,21 @@ async def registrar_novo_laboratorio(
             if not imagem.content_type.startswith("image/"):
                 raise HTTPException(400, f"O arquivo {imagem.filename} não é uma imagem válida.")
 
-            extensao = imagem.filename.split(".")[-1]
-            novo_nome = f"{uuid4()}.{extensao}"
-            caminho_completo = os.path.join(UPLOAD_DIR_LAB, novo_nome)
-
-            conteudo = await imagem.read()
-            async with aiofiles.open(caminho_completo, "wb") as buffer:
-                await buffer.write(conteudo)
-
-            caminhos_imagens.append(f"/{caminho_completo}")
-
+            try:
+                conteudo = await imagem.read()
+                
+                resultado_upload = cloudinary.uploader.upload(
+                    conteudo, 
+                    folder="parcerias_ufpa/laboratorios",
+                    public_id=str(uuid4())
+                )
+                
+                url_segura = resultado_upload.get("secure_url")
+                
+                caminhos_imagens.append(url_segura)
+                
+            except Exception as e:
+                raise HTTPException(500, f"Erro ao enviar imagem para a nuvem: {str(e)}")
     dados = LaboratorioRegistroCreate(
         nome=nome,
         sigla=sigla,

@@ -20,6 +20,7 @@ python-multipart = "^0.0.22"
 pandas = "^3.0.1"
 aiofiles = "^25.1.0"
 python3-saml = "^1.16.0"
+cloudinary = "^1.44.2"
 
 [build-system]
 requires = ["poetry-core"]
